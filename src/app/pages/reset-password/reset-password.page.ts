@@ -24,12 +24,12 @@ import { AuthApiService } from '../../services/auth-api.service';
             <input type="password" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2" formControlName="confirmPassword" />
           </label>
 
-          <button class="w-full rounded-lg bg-indigo-600 text-white py-2 font-medium disabled:opacity-60" [disabled]="loading || !accessToken">
+          <button class="w-full rounded-lg bg-indigo-600 text-white py-2 font-medium disabled:opacity-60" [disabled]="loading || (!accessToken && !token)">
             {{ loading ? 'Guardando...' : 'Guardar nueva contraseña' }}
           </button>
         </form>
 
-        <p *ngIf="!accessToken" class="text-sm text-red-600">No se encontró access token de recuperación en la URL.</p>
+        <p *ngIf="!accessToken && !token" class="text-sm text-red-600">No se encontró token de recuperación en la URL.</p>
         <p *ngIf="message" class="text-sm text-emerald-700">{{ message }}</p>
         <p *ngIf="error" class="text-sm text-red-600">{{ error }}</p>
 
@@ -43,6 +43,7 @@ export class ResetPasswordPageComponent implements OnInit {
   private readonly authApi = inject(AuthApiService);
 
   accessToken = '';
+  token = '';
   loading = false;
   message = '';
   error = '';
@@ -54,14 +55,17 @@ export class ResetPasswordPageComponent implements OnInit {
 
   ngOnInit(): void {
     const hash = window.location.hash.replace(/^#/, '');
-    const params = new URLSearchParams(hash);
-    this.accessToken = params.get('access_token') || '';
+    const hashParams = new URLSearchParams(hash);
+    this.accessToken = hashParams.get('access_token') || '';
+
+    const queryParams = new URLSearchParams(window.location.search);
+    this.token = queryParams.get('token') || '';
   }
 
   submit(): void {
     this.message = '';
     this.error = '';
-    if (this.form.invalid || !this.accessToken) return;
+    if (this.form.invalid || (!this.accessToken && !this.token)) return;
 
     const { password, confirmPassword } = this.form.getRawValue();
     if (password !== confirmPassword) {
@@ -73,7 +77,12 @@ export class ResetPasswordPageComponent implements OnInit {
 
     this.loading = true;
     this.authApi
-      .resetPassword({ domain, accessToken: this.accessToken, password: password ?? '' })
+      .resetPassword({
+        domain,
+        accessToken: this.accessToken || undefined,
+        token: this.token || undefined,
+        password: password ?? '',
+      })
       .subscribe({
         next: (res) => {
           this.message = res.message;

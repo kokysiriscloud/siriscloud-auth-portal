@@ -46,12 +46,14 @@ export class AuthApiService {
 
   resetPassword(payload: {
     domain: string;
-    accessToken: string;
+    accessToken?: string;
+    token?: string;
     password: string;
   }): Observable<{ ok: true; message: string }> {
     const apiUrl = this.tenantConfig.resolveApiUrl(payload.domain);
     return this.http.post<{ ok: true; message: string }>(`${apiUrl}/api/auth/reset-password`, {
       accessToken: payload.accessToken,
+      token: payload.token,
       password: payload.password,
     });
   }
