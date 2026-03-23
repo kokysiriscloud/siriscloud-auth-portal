@@ -1,18 +1,83 @@
-import { Component } from '@angular/core';
-import { RouterModule } from '@angular/router';
+import { CommonModule } from '@angular/common';
+import { Component, inject } from '@angular/core';
+import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { Router, RouterModule } from '@angular/router';
+import { AuthApiService } from '../../services/auth-api.service';
+import { AuthSessionService } from '../../services/auth-session.service';
 
 @Component({
   selector: 'app-login-page',
   standalone: true,
-  imports: [RouterModule],
+  imports: [CommonModule, ReactiveFormsModule, RouterModule],
   template: `
-    <main class="min-h-screen flex items-center justify-center p-4">
-      <section class="w-full max-w-md bg-white rounded-2xl shadow p-6 space-y-3">
+    <main class="min-h-screen flex items-center justify-center p-4 bg-slate-50">
+      <section class="w-full max-w-md bg-white rounded-2xl shadow p-6 space-y-4">
         <h1 class="text-2xl font-semibold">Login</h1>
-        <p class="text-slate-500">Pantalla base lista para conectar con endpoint de login.</p>
-        <a routerLink="/forgot-password" class="text-indigo-600 hover:underline">¿Olvidaste tu contraseña?</a>
+
+        <form [formGroup]="form" (ngSubmit)="submit()" class="space-y-3">
+          <label class="block">
+            <span class="text-sm text-slate-700">Correo</span>
+            <input class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2" formControlName="email" />
+          </label>
+
+          <label class="block">
+            <span class="text-sm text-slate-700">Contraseña</span>
+            <input type="password" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2" formControlName="password" />
+          </label>
+
+          <button class="w-full rounded-lg bg-indigo-600 text-white py-2 font-medium disabled:opacity-60" [disabled]="loading">
+            {{ loading ? 'Ingresando...' : 'Ingresar' }}
+          </button>
+        </form>
+
+        <p *ngIf="error" class="text-sm text-red-600">{{ error }}</p>
+        <p *ngIf="ok" class="text-sm text-emerald-600">{{ ok }}</p>
+
+        <div class="text-sm space-y-1">
+          <a routerLink="/forgot-password" class="block text-indigo-600 hover:underline">¿Olvidaste tu contraseña?</a>
+          <a routerLink="/forgot-username" class="block text-indigo-600 hover:underline">¿Olvidaste tu usuario?</a>
+        </div>
       </section>
     </main>
-  `
+  `,
 })
-export class LoginPageComponent {}
+export class LoginPageComponent {
+  private readonly fb = inject(FormBuilder);
+  private readonly authApi = inject(AuthApiService);
+  private readonly session = inject(AuthSessionService);
+  private readonly router = inject(Router);
+
+  loading = false;
+  error = '';
+  ok = '';
+
+  form = this.fb.group({
+    email: ['', [Validators.required, Validators.email]],
+    password: ['', [Validators.required]],
+  });
+
+  submit(): void {
+    this.error = '';
+    this.ok = '';
+    if (this.form.invalid) return;
+
+    const domain = new URL(window.location.href).searchParams.get('domain') || window.location.hostname;
+    const { email, password } = this.form.getRawValue();
+
+    this.loading = true;
+    this.authApi
+      .login({ domain, email: email ?? '', password: password ?? '' })
+      .subscribe({
+        next: (res) => {
+          this.session.save(res);
+          this.ok = `Bienvenido ${res.user.email}`;
+          this.loading = false;
+          void this.router.navigateByUrl('/');
+        },
+        error: (err) => {
+          this.error = err?.error?.message ?? 'No fue posible iniciar sesión.';
+          this.loading = false;
+        },
+      });
+  }
+}
