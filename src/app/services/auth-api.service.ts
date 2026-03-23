@@ -44,6 +44,18 @@ export class AuthApiService {
     );
   }
 
+  resetPassword(payload: {
+    domain: string;
+    accessToken: string;
+    password: string;
+  }): Observable<{ ok: true; message: string }> {
+    const apiUrl = this.tenantConfig.resolveApiUrl(payload.domain);
+    return this.http.post<{ ok: true; message: string }>(`${apiUrl}/api/auth/reset-password`, {
+      accessToken: payload.accessToken,
+      password: payload.password,
+    });
+  }
+
   acceptOwnerInvite(payload: {
     token: string;
     domain: string;
