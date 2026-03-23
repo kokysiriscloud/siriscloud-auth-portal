@@ -22,4 +22,16 @@ export class AuthSessionService {
       return null;
     }
   }
+
+  getAccessToken(): string | null {
+    return this.get()?.accessToken ?? null;
+  }
+
+  getRefreshToken(): string | null {
+    return this.get()?.refreshToken ?? null;
+  }
+
+  isAuthenticated(): boolean {
+    return Boolean(this.getAccessToken());
+  }
 }
