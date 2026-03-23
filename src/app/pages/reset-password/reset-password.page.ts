@@ -33,7 +33,12 @@ import { AuthApiService } from '../../services/auth-api.service';
         <p *ngIf="message" class="text-sm text-emerald-700">{{ message }}</p>
         <p *ngIf="error" class="text-sm text-red-600">{{ error }}</p>
 
-        <a routerLink="/login" class="text-sm text-indigo-600 hover:underline">Volver a login</a>
+        <div class="space-y-1">
+          <a *ngIf="showRequestNewLink" routerLink="/forgot-password" class="block text-sm text-indigo-600 hover:underline">
+            Solicitar nuevo enlace
+          </a>
+          <a routerLink="/login" class="block text-sm text-indigo-600 hover:underline">Volver a login</a>
+        </div>
       </section>
     </main>
   `,
@@ -47,6 +52,7 @@ export class ResetPasswordPageComponent implements OnInit {
   loading = false;
   message = '';
   error = '';
+  showRequestNewLink = false;
 
   form = this.fb.group({
     password: ['', [Validators.required, Validators.minLength(8)]],
@@ -65,6 +71,7 @@ export class ResetPasswordPageComponent implements OnInit {
   submit(): void {
     this.message = '';
     this.error = '';
+    this.showRequestNewLink = false;
     if (this.form.invalid || (!this.accessToken && !this.token)) return;
 
     const { password, confirmPassword } = this.form.getRawValue();
@@ -90,6 +97,10 @@ export class ResetPasswordPageComponent implements OnInit {
         },
         error: (err) => {
           this.error = err?.error?.message ?? 'No fue posible actualizar la contraseña.';
+          this.showRequestNewLink =
+            this.error.toLowerCase().includes('expir') ||
+            this.error.toLowerCase().includes('válido') ||
+            this.error.toLowerCase().includes('valido');
           this.loading = false;
         },
       });
