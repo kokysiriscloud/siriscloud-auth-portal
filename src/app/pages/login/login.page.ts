@@ -4,6 +4,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { AuthApiService } from '../../services/auth-api.service';
 import { AuthSessionService } from '../../services/auth-session.service';
+import { TenantConfigService } from '../../services/tenant-config.service';
 
 @Component({
   selector: 'app-login-page',
@@ -45,6 +46,7 @@ export class LoginPageComponent {
   private readonly fb = inject(FormBuilder);
   private readonly authApi = inject(AuthApiService);
   private readonly session = inject(AuthSessionService);
+  private readonly tenantConfig = inject(TenantConfigService);
   private readonly router = inject(Router);
 
   loading = false;
@@ -72,7 +74,14 @@ export class LoginPageComponent {
           this.session.save(res);
           this.ok = `Bienvenido ${res.user.email}`;
           this.loading = false;
-          void this.router.navigateByUrl('/');
+
+          const targetAppUrl = this.tenantConfig.resolveClientAppUrl(res.tenant?.domain || domain);
+          if (targetAppUrl && !targetAppUrl.includes(window.location.host)) {
+            window.location.href = targetAppUrl;
+            return;
+          }
+
+          void this.router.navigateByUrl('/dashboard');
         },
         error: (err) => {
           this.error = err?.error?.message ?? 'No fue posible iniciar sesión.';
