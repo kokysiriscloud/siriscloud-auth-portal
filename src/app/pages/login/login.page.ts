@@ -77,7 +77,9 @@ export class LoginPageComponent {
 
           const targetAppUrl = this.tenantConfig.resolveClientAppUrl(res.tenant?.domain || domain);
           if (targetAppUrl && !targetAppUrl.includes(window.location.host)) {
-            window.location.href = targetAppUrl;
+            const payload = encodeURIComponent(btoa(JSON.stringify(res)));
+            const joiner = targetAppUrl.includes('?') ? '&' : '?';
+            window.location.href = `${targetAppUrl}${joiner}session=${payload}`;
             return;
           }
 
