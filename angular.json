@@ -37,6 +37,11 @@
         },
         "serve": {
           "builder": "@angular-devkit/build-angular:dev-server",
+          "options": {
+            "host": "0.0.0.0",
+            "port": 4200,
+            "allowedHosts": ["auth.siriscloud.com.co"]
+          },
           "configurations": {
             "production": { "buildTarget": "siriscloud-auth-portal:build:production" },
             "development": { "buildTarget": "siriscloud-auth-portal:build:development" }
