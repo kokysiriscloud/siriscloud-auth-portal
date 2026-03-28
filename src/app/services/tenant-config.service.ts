@@ -34,6 +34,6 @@ export class TenantConfigService {
       return isLocal ? this.appByDomain[domain].local : this.appByDomain[domain].prod;
     }
 
-    return isLocal ? 'http://localhost:4300' : 'https://app.siriscloud.com.co';
+    return isLocal ? 'http://localhost:4300' : 'https://mallamaseps.siriscloud.com.co';
   }
 }
