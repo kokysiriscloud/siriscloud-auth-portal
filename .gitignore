@@ -1,0 +1,9 @@
+node_modules/
+dist/
+
+# Angular cache/build artifacts
+.angular/
+*.tsbuildinfo
+
+# Test/build outputs
+coverage/
