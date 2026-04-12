@@ -107,7 +107,7 @@ export class DashboardPageComponent {
   userRole = this.data?.user?.role ?? '-';
 
   openMetaApp(): void {
-    window.location.href = 'http://localhost:4200/meta/connect';
+    window.location.href = 'http://localhost:4300/meta/connect';
   }
 
   logout(): void {
