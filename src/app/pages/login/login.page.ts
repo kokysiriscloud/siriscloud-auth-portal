@@ -75,7 +75,8 @@ export class LoginPageComponent {
           this.ok = `Bienvenido ${res.user.email}`;
           this.loading = false;
 
-          const targetAppUrl = this.tenantConfig.resolveClientAppUrl(res.tenant?.domain || domain);
+          const requestedReturnUrl = new URL(window.location.href).searchParams.get('returnUrl');
+          const targetAppUrl = requestedReturnUrl || this.tenantConfig.resolveClientAppUrl(res.tenant?.domain || domain);
           if (targetAppUrl && !targetAppUrl.includes(window.location.host)) {
             const payload = encodeURIComponent(btoa(JSON.stringify(res)));
             const joiner = targetAppUrl.includes('?') ? '&' : '?';
