@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, inject } from '@angular/core';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { AuthSessionService } from '../../services/auth-session.service';
 
 @Component({
@@ -98,6 +98,7 @@ import { AuthSessionService } from '../../services/auth-session.service';
 export class DashboardPageComponent {
   private readonly session = inject(AuthSessionService);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
 
   private readonly data = this.session.get();
 
@@ -107,6 +108,14 @@ export class DashboardPageComponent {
   userRole = this.data?.user?.role ?? '-';
 
   openMetaApp(): void {
+    const requestedRedirectUrl = this.route.snapshot.queryParamMap.get('redirect');
+    if (requestedRedirectUrl) {
+      const payload = encodeURIComponent(btoa(JSON.stringify(this.data)));
+      const joiner = requestedRedirectUrl.includes('?') ? '&' : '?';
+      window.location.href = `${requestedRedirectUrl}${joiner}session=${payload}`;
+      return;
+    }
+
     window.location.href = 'http://localhost:4300/meta/connect';
   }
 

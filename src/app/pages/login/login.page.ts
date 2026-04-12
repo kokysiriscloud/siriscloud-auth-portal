@@ -75,8 +75,10 @@ export class LoginPageComponent {
           this.ok = `Bienvenido ${res.user.email}`;
           this.loading = false;
 
-          const requestedReturnUrl = new URL(window.location.href).searchParams.get('returnUrl');
-          const targetAppUrl = requestedReturnUrl || this.tenantConfig.resolveClientAppUrl(res.tenant?.domain || domain);
+          const currentUrl = new URL(window.location.href);
+          const requestedRedirectUrl = currentUrl.searchParams.get('redirect');
+          const requestedReturnUrl = currentUrl.searchParams.get('returnUrl');
+          const targetAppUrl = requestedRedirectUrl || requestedReturnUrl || this.tenantConfig.resolveClientAppUrl(res.tenant?.domain || domain);
           if (targetAppUrl && !targetAppUrl.includes(window.location.host)) {
             const payload = encodeURIComponent(btoa(JSON.stringify(res)));
             const joiner = targetAppUrl.includes('?') ? '&' : '?';
