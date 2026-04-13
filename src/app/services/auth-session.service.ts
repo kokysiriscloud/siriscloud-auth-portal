@@ -32,6 +32,17 @@ export class AuthSessionService {
   }
 
   isAuthenticated(): boolean {
-    return Boolean(this.getAccessToken());
+    const token = this.getAccessToken();
+    if (!token) return false;
+
+    try {
+      const [body] = token.split('.');
+      if (!body) return false;
+      const payload = JSON.parse(atob(body.replace(/-/g, '+').replace(/_/g, '/'))) as { exp?: number };
+      if (!payload?.exp) return false;
+      return Date.now() < payload.exp;
+    } catch {
+      return false;
+    }
   }
 }

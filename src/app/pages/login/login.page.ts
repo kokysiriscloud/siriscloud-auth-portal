@@ -49,6 +49,15 @@ export class LoginPageComponent {
   private readonly tenantConfig = inject(TenantConfigService);
   private readonly router = inject(Router);
 
+  constructor() {
+    const currentUrl = new URL(window.location.href);
+    const requestedRedirectUrl = currentUrl.searchParams.get('redirect');
+
+    if (requestedRedirectUrl && !this.session.isAuthenticated()) {
+      this.session.clear();
+    }
+  }
+
   loading = false;
   error = '';
   ok = '';
@@ -71,6 +80,7 @@ export class LoginPageComponent {
       .login({ domain, email: email ?? '', password: password ?? '' })
       .subscribe({
         next: (res) => {
+          this.session.clear();
           this.session.save(res);
           this.ok = `Bienvenido ${res.user.email}`;
           this.loading = false;
