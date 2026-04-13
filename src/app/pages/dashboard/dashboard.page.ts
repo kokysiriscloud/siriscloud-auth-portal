@@ -116,7 +116,7 @@ export class DashboardPageComponent {
       return;
     }
 
-    window.location.href = 'http://localhost:4300/meta/connect';
+    window.location.href = 'https://national-clam-ghastly.ngrok-free.app/meta/connect';
   }
 
   logout(): void {
