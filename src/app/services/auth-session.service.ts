@@ -1,23 +1,29 @@
 import { Injectable } from '@angular/core';
 import { LoginResponse } from './auth-api.service';
 
+type StoredSession = LoginResponse & {
+  expiresAt?: number;
+};
+
 @Injectable({ providedIn: 'root' })
 export class AuthSessionService {
   private readonly key = 'siriscloud_auth_session';
 
   save(session: LoginResponse): void {
-    localStorage.setItem(this.key, JSON.stringify(session));
+    const expiresAt = Number.isFinite(session.expiresIn) ? Date.now() + session.expiresIn * 1000 : undefined;
+    const storedSession: StoredSession = { ...session, expiresAt };
+    localStorage.setItem(this.key, JSON.stringify(storedSession));
   }
 
   clear(): void {
     localStorage.removeItem(this.key);
   }
 
-  get(): LoginResponse | null {
+  get(): StoredSession | null {
     const raw = localStorage.getItem(this.key);
     if (!raw) return null;
     try {
-      return JSON.parse(raw) as LoginResponse;
+      return JSON.parse(raw) as StoredSession;
     } catch {
       return null;
     }
@@ -32,17 +38,30 @@ export class AuthSessionService {
   }
 
   isAuthenticated(): boolean {
-    const token = this.getAccessToken();
+    const session = this.get();
+    const token = session?.accessToken;
     if (!token) return false;
 
     try {
-      const [body] = token.split('.');
-      if (!body) return false;
-      const payload = JSON.parse(atob(body.replace(/-/g, '+').replace(/_/g, '/'))) as { exp?: number };
-      if (!payload?.exp) return false;
-      return Date.now() < payload.exp;
+      const payload = this.decodeAccessTokenPayload(token);
+      if (payload?.exp != null) {
+        // JWT estándar usa `exp` en segundos; el backend Siris (`body.signature`) usa ms absolutos.
+        const expMs = payload.exp > 1e11 ? payload.exp : payload.exp * 1000;
+        return Date.now() < expMs;
+      }
     } catch {
-      return false;
+      // token no parseable
     }
+
+    return typeof session.expiresAt === 'number' && Date.now() < session.expiresAt;
+  }
+
+  /** Soporta JWT (3 segmentos) y tokens del auth API (payload firmado en el 1.er segmento). */
+  private decodeAccessTokenPayload(token: string): { exp?: number } | null {
+    const parts = token.split('.');
+    const encoded = parts.length >= 3 ? parts[1] : parts[0];
+    if (!encoded) return null;
+    const json = atob(encoded.replace(/-/g, '+').replace(/_/g, '/'));
+    return JSON.parse(json) as { exp?: number };
   }
 }

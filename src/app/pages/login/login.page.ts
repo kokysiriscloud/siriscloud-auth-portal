@@ -1,10 +1,9 @@
 import { CommonModule } from '@angular/common';
 import { Component, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router, RouterModule } from '@angular/router';
+import { RouterModule } from '@angular/router';
 import { AuthApiService } from '../../services/auth-api.service';
 import { AuthSessionService } from '../../services/auth-session.service';
-import { TenantConfigService } from '../../services/tenant-config.service';
 
 @Component({
   selector: 'app-login-page',
@@ -46,8 +45,6 @@ export class LoginPageComponent {
   private readonly fb = inject(FormBuilder);
   private readonly authApi = inject(AuthApiService);
   private readonly session = inject(AuthSessionService);
-  private readonly tenantConfig = inject(TenantConfigService);
-  private readonly router = inject(Router);
 
   constructor() {
     const currentUrl = new URL(window.location.href);
@@ -88,15 +85,12 @@ export class LoginPageComponent {
           const currentUrl = new URL(window.location.href);
           const requestedRedirectUrl = currentUrl.searchParams.get('redirect');
           const requestedReturnUrl = currentUrl.searchParams.get('returnUrl');
-          const targetAppUrl = requestedRedirectUrl || requestedReturnUrl || this.tenantConfig.resolveClientAppUrl(res.tenant?.domain || domain);
-          if (targetAppUrl && !targetAppUrl.includes(window.location.host)) {
-            const payload = encodeURIComponent(btoa(JSON.stringify(res)));
-            const joiner = targetAppUrl.includes('?') ? '&' : '?';
-            window.location.href = `${targetAppUrl}${joiner}session=${payload}`;
-            return;
-          }
-
-          void this.router.navigateByUrl('/dashboard');
+          // Siempre mostrar el hub primero; si venía un deep-link, se conserva en la URL del dashboard
+          // para que openMetaApp() u otros botones lo respeten al elegir producto.
+          const dashboardUrl = new URL('/dashboard', window.location.origin);
+          if (requestedRedirectUrl) dashboardUrl.searchParams.set('redirect', requestedRedirectUrl);
+          if (requestedReturnUrl) dashboardUrl.searchParams.set('returnUrl', requestedReturnUrl);
+          window.location.href = dashboardUrl.toString();
         },
         error: (err) => {
           this.error = err?.error?.message ?? 'No fue posible iniciar sesión.';
