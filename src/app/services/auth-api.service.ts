@@ -54,16 +54,15 @@ export class AuthApiService {
 
   login(payload: { domain: string; email: string; password: string }): Observable<LoginResponse> {
     const apiUrl = this.tenantConfig.resolveApiUrl(payload.domain);
-    const headers: Record<string, string> = {};
     const tenantHost = this.resolveLoginTenantHost(payload.domain);
+    const body: { email: string; password: string; tenantHost?: string } = {
+      email: payload.email,
+      password: payload.password,
+    };
     if (tenantHost) {
-      headers['x-tenant-host'] = tenantHost;
+      body.tenantHost = tenantHost;
     }
-    return this.http.post<LoginResponse>(
-      `${apiUrl}/api/auth/login`,
-      { email: payload.email, password: payload.password },
-      { headers },
-    );
+    return this.http.post<LoginResponse>(`${apiUrl}/api/auth/login`, body);
   }
 
   /**
