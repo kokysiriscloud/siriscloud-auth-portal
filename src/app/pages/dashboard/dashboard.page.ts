@@ -160,14 +160,15 @@ export class DashboardPageComponent implements OnInit {
 
   openApp(app: LauncherAppView): void {
     const requestedRedirectUrl = this.route.snapshot.queryParamMap.get('redirect');
-    if (requestedRedirectUrl && app.usesSessionRedirect) {
+    if (app.usesSessionRedirect) {
       const payload = encodeURIComponent(btoa(JSON.stringify(this.data)));
-      const joiner = requestedRedirectUrl.includes('?') ? '&' : '?';
-      window.location.href = `${requestedRedirectUrl}${joiner}session=${payload}`;
+      const baseUrl = requestedRedirectUrl || app.launchUrl;
+      const joiner = baseUrl.includes('?') ? '&' : '?';
+      window.location.href = `${baseUrl}${joiner}session=${payload}`;
       return;
     }
 
-    window.location.href = app.launchUrl;
+    window.location.href = requestedRedirectUrl || app.launchUrl;
   }
 
   logout(): void {
