@@ -45,12 +45,36 @@ export interface UpsertLauncherAppResponse {
   app: TenantLauncherApp;
 }
 
+export interface DiscoveredTenant {
+  tenantId: string;
+  slug: string;
+  name: string;
+  domain: string;
+  role: 'owner' | 'admin' | 'user' | 'viewer';
+}
+
+export interface DiscoverTenantsResponse {
+  tenants: DiscoveredTenant[];
+}
+
 @Injectable({ providedIn: 'root' })
 export class AuthApiService {
   constructor(
     private readonly http: HttpClient,
     private readonly tenantConfig: TenantConfigService
   ) {}
+
+  /**
+   * Multi-tenant: dado un email, devuelve los tenants donde está registrado.
+   * El portal SSO lo usa para armar `tenantHost` antes del login cuando no hay `?domain=`.
+   */
+  discoverTenantsByEmail(payload: { email: string; domain?: string }): Observable<DiscoverTenantsResponse> {
+    const apiUrl = this.tenantConfig.resolveApiUrl(payload.domain);
+    return this.http.post<DiscoverTenantsResponse>(
+      `${apiUrl}/api/auth/tenants/by-email`,
+      { email: payload.email },
+    );
+  }
 
   login(payload: { domain: string; email: string; password: string }): Observable<LoginResponse> {
     const apiUrl = this.tenantConfig.resolveApiUrl(payload.domain);

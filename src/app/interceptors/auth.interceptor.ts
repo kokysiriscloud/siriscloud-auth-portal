@@ -4,6 +4,7 @@ import { AuthSessionService } from '../services/auth-session.service';
 
 const PUBLIC_AUTH_PATHS = [
   '/api/auth/login',
+  '/api/auth/tenants/by-email',
   '/api/auth/forgot-password',
   '/api/auth/forgot-username',
   '/api/auth/owner/accept-invite',
