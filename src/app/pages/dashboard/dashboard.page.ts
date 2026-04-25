@@ -1,7 +1,19 @@
 import { CommonModule } from '@angular/common';
-import { Component, inject } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AuthSessionService } from '../../services/auth-session.service';
+import { AuthApiService, TenantLauncherApp } from '../../services/auth-api.service';
+
+interface LauncherAppView {
+  id: string;
+  appKey: string;
+  category: string;
+  name: string;
+  description: string;
+  launchUrl: string;
+  ctaLabel: string;
+  usesSessionRedirect: boolean;
+}
 
 @Component({
   selector: 'app-dashboard-page',
@@ -19,15 +31,38 @@ import { AuthSessionService } from '../../services/auth-session.service';
           <div class="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
             <div>
               <p class="text-sm uppercase tracking-[0.25em] text-sky-400">SirisCloud Auth Portal</p>
-              <h1 class="mt-3 text-5xl font-semibold tracking-tight text-white">Hub central del ecosistema</h1>
+              <h1 class="mt-3 text-5xl font-semibold tracking-tight text-white">Hub central SirisCloud</h1>
               <p class="mt-4 max-w-3xl text-sm leading-7 text-slate-400">
-                Autentica una sola vez y navega entre productos SirisCloud reutilizando la sesión.
-                Este portal actúa como punto de entrada común para soluciones especializadas.
+                Autentica una sola vez y accede a los productos SirisCloud con la misma sesión.
+                Este portal es el punto de entrada común para las soluciones de tu organización.
               </p>
             </div>
             <button class="rounded-2xl bg-red-600 px-4 py-3 text-sm font-medium text-white" (click)="logout()">Cerrar sesión</button>
           </div>
         </header>
+
+        <div
+          class="rounded-3xl border border-slate-800 bg-slate-900/70 p-5 shadow-lg shadow-slate-950/20 backdrop-blur-sm"
+        >
+          <div class="flex flex-col gap-4 lg:flex-row lg:items-stretch lg:justify-between lg:gap-8">
+            <div class="shrink-0 lg:pt-0.5">
+              <p class="text-xs uppercase tracking-[0.2em] text-sky-400/90">Contexto de sesión</p>
+              <p class="mt-1 text-sm text-slate-500">Dominio y estado de la sesión central.</p>
+            </div>
+            <div class="flex min-w-0 flex-1 flex-col gap-3 sm:flex-row sm:items-stretch">
+              <div
+                class="min-w-0 flex-1 rounded-2xl border border-slate-800 bg-slate-950/70 px-4 py-3 sm:min-w-[12rem]"
+              >
+                <p class="text-xs uppercase tracking-[0.18em] text-slate-500">Dominio</p>
+                <p class="mt-1.5 break-all text-sm font-medium text-white">{{ tenantDomain }}</p>
+              </div>
+              <div class="shrink-0 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 px-4 py-3 sm:w-52">
+                <p class="text-xs uppercase tracking-[0.18em] text-slate-500">Estado</p>
+                <p class="mt-1.5 text-sm font-medium text-emerald-300">Sesión central activa</p>
+              </div>
+            </div>
+          </div>
+        </div>
 
         <section class="grid gap-4 md:grid-cols-4">
           <div class="rounded-2xl border border-slate-800 bg-slate-900/70 p-5">
@@ -44,59 +79,60 @@ import { AuthSessionService } from '../../services/auth-session.service';
           </div>
           <div class="rounded-2xl border border-slate-800 bg-slate-900/70 p-5">
             <p class="text-xs uppercase tracking-[0.18em] text-slate-500">Apps</p>
-            <p class="mt-3 text-lg font-semibold text-white">1 activa</p>
+            <p class="mt-3 text-lg font-semibold text-white">{{ activeAppsLabel }}</p>
           </div>
         </section>
 
-        <section class="grid gap-6 lg:grid-cols-[0.85fr_1.15fr]">
-          <div class="rounded-3xl border border-slate-800 bg-slate-900/70 p-6">
-            <p class="text-sm font-medium text-slate-300">Contexto de sesión</p>
-            <div class="mt-5 space-y-3 text-sm text-slate-300">
-              <div class="rounded-2xl border border-slate-800 bg-slate-950/70 px-4 py-3">
-                <p class="text-xs uppercase tracking-[0.18em] text-slate-500">Dominio</p>
-                <p class="mt-2 text-white">{{ tenantDomain }}</p>
-              </div>
-              <div class="rounded-2xl border border-slate-800 bg-slate-950/70 px-4 py-3">
-                <p class="text-xs uppercase tracking-[0.18em] text-slate-500">Estado</p>
-                <p class="mt-2 text-emerald-300">Sesión central activa</p>
-              </div>
-            </div>
+        <section class="rounded-3xl border border-slate-800 bg-slate-900/70 p-6">
+          <div class="mb-5">
+            <p class="text-sm font-medium text-slate-300">Launcher de aplicaciones</p>
           </div>
 
-          <div class="rounded-3xl border border-slate-800 bg-slate-900/70 p-6">
-            <div class="flex items-center justify-between gap-4">
-              <div>
-                <p class="text-sm font-medium text-slate-300">Launcher de aplicaciones</p>
-                <p class="mt-1 text-xs text-slate-500">Accede a las soluciones conectadas al auth portal.</p>
-              </div>
-            </div>
+          <div
+            *ngIf="!appsLoading && apps.length === 0"
+            class="rounded-3xl border border-dashed border-slate-700 bg-slate-950/40 p-6 text-left"
+          >
+            <p class="text-xs uppercase tracking-[0.2em] text-slate-500">Aplicaciones</p>
+            <h3 class="mt-3 text-xl font-semibold text-white">No hay aplicaciones conectadas</h3>
+            <p class="mt-2 text-sm leading-6 text-slate-400">
+              Cuando tu organización tenga aplicaciones disponibles, aparecerán aquí. Si necesitas acceso, contacta al administrador.
+            </p>
+          </div>
 
-            <div class="mt-5 grid gap-4 md:grid-cols-2">
-              <button class="rounded-3xl border border-sky-400/20 bg-sky-400/10 p-5 text-left transition hover:bg-sky-400/15" (click)="openMetaApp()">
-                <p class="text-xs uppercase tracking-[0.2em] text-sky-300">Meta Platform</p>
-                <h3 class="mt-3 text-xl font-semibold text-white">App Meta SirisCloud</h3>
-                <p class="mt-2 text-sm leading-6 text-slate-300">
-                  Onboarding, Embedded Signup, callbacks, session reuse y operación sobre integraciones con Meta.
-                </p>
-                <span class="mt-4 inline-flex rounded-full bg-slate-950/60 px-3 py-1 text-xs text-slate-200">Abrir app</span>
-              </button>
+          <div
+            *ngIf="apps.length > 0"
+            class="flex snap-x snap-mandatory flex-nowrap gap-4 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:thin] [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-slate-600"
+          >
+            <button
+              *ngFor="let app of apps"
+              type="button"
+              class="w-[min(100%,17.5rem)] shrink-0 snap-start rounded-3xl border border-sky-400/20 bg-sky-400/10 p-5 text-left transition hover:bg-sky-400/15 sm:w-72"
+              (click)="openApp(app)"
+            >
+              <p class="text-xs uppercase tracking-[0.2em] text-sky-300">{{ app.category }}</p>
+              <h3 class="mt-3 line-clamp-2 text-lg font-semibold leading-snug text-white">{{ app.name }}</h3>
+              <p class="mt-2 line-clamp-3 text-sm leading-relaxed text-slate-300">{{ app.description }}</p>
+              <span class="mt-4 inline-flex rounded-full bg-slate-950/60 px-3 py-1 text-xs text-slate-200">{{
+                app.ctaLabel
+              }}</span>
+            </button>
+          </div>
 
-              <div class="rounded-3xl border border-dashed border-slate-700 bg-slate-950/40 p-5 text-left">
-                <p class="text-xs uppercase tracking-[0.2em] text-slate-500">Próximamente</p>
-                <h3 class="mt-3 text-xl font-semibold text-white">Más apps del ecosistema</h3>
-                <p class="mt-2 text-sm leading-6 text-slate-400">
-                  Este espacio queda listo para lanzar más productos compartiendo autenticación y contexto multi-tenant.
-                </p>
-              </div>
-            </div>
+          <div
+            *ngIf="launcherDebugPanel"
+            class="mt-6 rounded-2xl border border-amber-500/30 bg-amber-500/5 p-4 text-left"
+          >
+            <p class="text-xs font-medium uppercase tracking-wide text-amber-200/90">Debug launcher</p>
+            <pre class="mt-2 max-h-64 overflow-auto text-xs leading-relaxed text-slate-200">{{ launcherDebugPanel }}</pre>
           </div>
         </section>
       </section>
     </main>
   `,
 })
-export class DashboardPageComponent {
+export class DashboardPageComponent implements OnInit {
   private readonly session = inject(AuthSessionService);
+  private readonly authApi = inject(AuthApiService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
 
@@ -106,21 +142,94 @@ export class DashboardPageComponent {
   tenantDomain = this.data?.tenant?.domain ?? '-';
   userEmail = this.data?.user?.email ?? '-';
   userRole = this.data?.user?.role ?? '-';
+  apps: LauncherAppView[] = [];
+  appsLoading = false;
+  /** JSON visible si abres `/dashboard?launcherDebug=1` */
+  launcherDebugPanel = '';
 
-  openMetaApp(): void {
+  ngOnInit(): void {
+    this.loadLauncherApps();
+  }
+
+  get activeAppsLabel(): string {
+    if (this.appsLoading) return 'Cargando...';
+    const count = this.apps.length;
+    if (count === 0) return 'Ninguna conectada';
+    return `${count} activa${count === 1 ? '' : 's'}`;
+  }
+
+  openApp(app: LauncherAppView): void {
     const requestedRedirectUrl = this.route.snapshot.queryParamMap.get('redirect');
-    if (requestedRedirectUrl) {
+    if (requestedRedirectUrl && app.usesSessionRedirect) {
       const payload = encodeURIComponent(btoa(JSON.stringify(this.data)));
       const joiner = requestedRedirectUrl.includes('?') ? '&' : '?';
       window.location.href = `${requestedRedirectUrl}${joiner}session=${payload}`;
       return;
     }
 
-    window.location.href = 'https://national-clam-ghastly.ngrok-free.app/meta/connect';
+    window.location.href = app.launchUrl;
   }
 
   logout(): void {
     this.session.clear();
     void this.router.navigateByUrl('/login');
+  }
+
+  private loadLauncherApps(): void {
+    const domain = this.data?.tenant?.domain ?? window.location.hostname;
+    const launcherDebug = this.route.snapshot.queryParamMap.get('launcherDebug') === '1';
+    this.launcherDebugPanel = '';
+
+    if (!domain) {
+      this.apps = [];
+      return;
+    }
+
+    this.appsLoading = true;
+    this.authApi.getLauncherApps({ domain, debug: launcherDebug }).subscribe({
+      next: (response) => {
+        this.apps = (response.apps ?? []).map((app) => this.toViewModel(app));
+        this.appsLoading = false;
+        if (launcherDebug) {
+          const apiUrl = `${domain} → tenant-apps`;
+          const payload = {
+            apiUrlHint: apiUrl,
+            sessionTenantId: this.data?.tenant?.id ?? null,
+            sessionTenantDomain: this.data?.tenant?.domain ?? null,
+            appsCount: response.apps?.length ?? 0,
+            backendDebug: response._debug ?? '(sin _debug: en prod pon LAUNCHER_DEBUG=true y ?debug=1)',
+          };
+          this.launcherDebugPanel = JSON.stringify(payload, null, 2);
+          console.debug('[launcher]', payload);
+        }
+      },
+      error: (err: { status?: number; message?: string; url?: string }) => {
+        this.apps = [];
+        this.appsLoading = false;
+        if (launcherDebug) {
+          const payload = {
+            error: err?.message ?? 'Error HTTP',
+            status: err?.status ?? null,
+            sessionTenantId: this.data?.tenant?.id ?? null,
+            sessionTenantDomain: domain,
+          };
+          this.launcherDebugPanel = JSON.stringify(payload, null, 2);
+          console.warn('[launcher]', payload, err);
+        }
+      },
+    });
+  }
+
+  private toViewModel(app: TenantLauncherApp): LauncherAppView {
+    return {
+      id: app.id,
+      appKey: app.appKey,
+      category: app.category?.trim() || 'Aplicación',
+      name: app.name,
+      description: app.description,
+      launchUrl: app.launchUrl,
+      ctaLabel: app.ctaLabel || 'Abrir app',
+      usesSessionRedirect: app.usesSessionRedirect,
+    };
   }
 }

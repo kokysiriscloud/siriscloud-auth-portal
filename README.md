@@ -20,6 +20,10 @@ Abrir:
 
 - Configuración por dominio en:
   - `src/app/services/tenant-config.service.ts`
+- Launcher dinámico por tenant:
+  - backend `GET /api/auth/launcher/tenant-apps` y `POST /api/auth/launcher/tenant-apps` (asignaciones `tenant_launcher_app_assignments`)
+  - depuración UI: abre `/dashboard?launcherDebug=1` (consola + panel con `_debug` del API si aplica)
+  - SQL recomendado en `siriscloud-auth`: `sql/005_launcher_apps_catalog.sql` (`launcher_apps` + `tenant_launcher_app_assignments`)
 - Endpoint de aceptación de invitación en:
   - `src/app/services/auth-api.service.ts`
 
