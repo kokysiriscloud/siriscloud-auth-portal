@@ -67,12 +67,13 @@ export class AuthApiService {
   }
 
   /**
-   * Host para `x-tenant-host`: `?domain=` si parece un dominio de tenant;
-   * si el portal corre en localhost / IP privada / ::1, usa localStorage o `defaultLoginTenantHost`.
+   * Host para `x-tenant-host`: `?domain=` si es un dominio de tenant;
+   * si el portal es local, IP privada o host del SSO central (`centralAuthPortalHosts`), usa
+   * `localStorage['siris-dev-login-tenant-host']` o `defaultLoginTenantHost`.
    */
   private resolveLoginTenantHost(domain: string): string {
     const raw = String(domain || '').split(':')[0].trim().toLowerCase();
-    if (raw && !this.isLocalPortalHostname(raw)) {
+    if (raw && !this.isLocalPortalHostname(raw) && !this.isCentralAuthPortalHost(raw)) {
       return raw;
     }
     try {
@@ -94,6 +95,13 @@ export class AuthApiService {
       }
     }
     return '';
+  }
+
+  /** Hostname del portal SSO central (no coincide con `tenant_domains` del tenant). */
+  private isCentralAuthPortalHost(host: string): boolean {
+    const h = host.trim().toLowerCase();
+    const list = environment.centralAuthPortalHosts ?? [];
+    return list.some((x) => String(x).trim().toLowerCase() === h);
   }
 
   /** Hostname del propio dev server (no es el dominio del tenant en BD). */

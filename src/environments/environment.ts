@@ -4,8 +4,13 @@ export const environment = {
   // defaultApiUrl: 'https://api-auth.siriscloud.com.co',
   metaAppUrl: 'https://national-clam-ghastly.ngrok-free.app/meta/connect',
   /**
-   * Con portal en localhost / 127.0.0.1 / IP privada (192.168.x, 10.x, 172.16–31.x) y sin `?domain=`,
-   * el login envía `x-tenant-host` con este valor (debe existir en `tenant_domains.domain` o equivalente).
+   * Hostnames del portal SSO (no son dominios de tenant en BD). Si abres login en esa URL sin `?domain=`,
+   * se usa `defaultLoginTenantHost` como `x-tenant-host` para resolver el tenant.
+   */
+  centralAuthPortalHosts: ['auth.siriscloud.com.co'],
+  /**
+   * Dominio del tenant (p. ej. fila en `tenant_domains`) cuando el hostname del portal no es el del tenant
+   * (localhost, IP privada o `centralAuthPortalHosts`).
    */
   defaultLoginTenantHost: 'mallamaseps.siriscloud.com.co',
 };
