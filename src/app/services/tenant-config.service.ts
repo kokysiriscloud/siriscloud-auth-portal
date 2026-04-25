@@ -22,6 +22,10 @@ export class TenantConfigService {
     // aunque el query param traiga el dominio real del tenant.
     if (isLocal) return environment.defaultApiUrl;
 
+    // En producción el portal central SIEMPRE llama al API central (api-auth),
+    // el cual resuelve el tenant por token / tenant_domains.
+    if (environment.production) return environment.defaultApiUrl;
+
     if (domain && this.apiByDomain[domain]) return this.apiByDomain[domain];
     return environment.defaultApiUrl;
   }
