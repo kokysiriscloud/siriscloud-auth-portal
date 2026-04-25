@@ -5,8 +5,6 @@ import { RouterModule } from '@angular/router';
 import { AuthApiService, DiscoveredTenant } from '../../services/auth-api.service';
 import { AuthSessionService } from '../../services/auth-session.service';
 
-type Step = 'email' | 'tenant' | 'password';
-
 @Component({
   selector: 'app-login-page',
   standalone: true,
@@ -16,55 +14,16 @@ type Step = 'email' | 'tenant' | 'password';
       <section class="w-full max-w-md bg-white rounded-2xl shadow p-6 space-y-4">
         <h1 class="text-2xl font-semibold">Login</h1>
 
-        <!-- Paso 1: email -->
-        <form *ngIf="step === 'email'" [formGroup]="emailForm" (ngSubmit)="submitEmail()" class="space-y-3">
+        <form [formGroup]="form" (ngSubmit)="submit()" class="space-y-3">
           <label class="block">
             <span class="text-sm text-slate-700">Correo</span>
             <input
               class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
               formControlName="email"
               autocomplete="email"
+              (blur)="onEmailBlur()"
             />
           </label>
-          <button
-            class="w-full rounded-lg bg-indigo-600 text-white py-2 font-medium disabled:opacity-60"
-            [disabled]="loading"
-          >
-            {{ loading ? 'Buscando...' : 'Continuar' }}
-          </button>
-        </form>
-
-        <!-- Paso 2: selector de tenant -->
-        <div *ngIf="step === 'tenant'" class="space-y-3">
-          <p class="text-sm text-slate-700">Selecciona la organización con la que quieres ingresar</p>
-          <ul class="space-y-2">
-            <li *ngFor="let t of tenants">
-              <button
-                type="button"
-                class="w-full rounded-lg border border-slate-300 px-3 py-2 text-left hover:bg-slate-50"
-                (click)="selectTenant(t)"
-              >
-                <span class="block text-sm font-medium text-slate-900">{{ t.name }}</span>
-                <span class="block text-xs text-slate-500">{{ t.domain }}</span>
-              </button>
-            </li>
-          </ul>
-          <button
-            type="button"
-            class="text-sm text-slate-500 hover:text-slate-700"
-            (click)="backToEmail()"
-          >
-            ← Cambiar correo
-          </button>
-        </div>
-
-        <!-- Paso 3: contraseña -->
-        <form *ngIf="step === 'password'" [formGroup]="passwordForm" (ngSubmit)="submitPassword()" class="space-y-3">
-          <div class="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm">
-            <p class="text-slate-500 text-xs">Ingresando como</p>
-            <p class="font-medium text-slate-900">{{ emailForm.value.email }}</p>
-            <p class="text-xs text-slate-500">{{ selectedTenant?.name }} ({{ selectedTenant?.domain }})</p>
-          </div>
 
           <label class="block">
             <span class="text-sm text-slate-700">Contraseña</span>
@@ -76,19 +35,30 @@ type Step = 'email' | 'tenant' | 'password';
             />
           </label>
 
+          <div *ngIf="tenants.length > 1" class="space-y-2">
+            <p class="text-sm text-slate-700">Organización</p>
+            <ul class="space-y-2">
+              <li *ngFor="let t of tenants">
+                <button
+                  type="button"
+                  class="w-full rounded-lg border px-3 py-2 text-left transition"
+                  [class.border-indigo-500]="selectedTenant?.tenantId === t.tenantId"
+                  [class.bg-indigo-50]="selectedTenant?.tenantId === t.tenantId"
+                  [class.border-slate-300]="selectedTenant?.tenantId !== t.tenantId"
+                  (click)="selectTenant(t)"
+                >
+                  <span class="block text-sm font-medium text-slate-900">{{ t.name }}</span>
+                  <span class="block text-xs text-slate-500">{{ t.domain }}</span>
+                </button>
+              </li>
+            </ul>
+          </div>
+
           <button
             class="w-full rounded-lg bg-indigo-600 text-white py-2 font-medium disabled:opacity-60"
             [disabled]="loading"
           >
             {{ loading ? 'Ingresando...' : 'Ingresar' }}
-          </button>
-
-          <button
-            type="button"
-            class="text-sm text-slate-500 hover:text-slate-700"
-            (click)="backToEmail()"
-          >
-            ← Cambiar correo
           </button>
         </form>
 
@@ -108,6 +78,9 @@ export class LoginPageComponent {
   private readonly authApi = inject(AuthApiService);
   private readonly session = inject(AuthSessionService);
 
+  /** Si el usuario entra con `?domain=<tenant>`, se respeta y se salta el descubrimiento. */
+  private readonly forcedDomain: string | null;
+
   constructor() {
     const currentUrl = new URL(window.location.href);
     const requestedRedirectUrl = currentUrl.searchParams.get('redirect');
@@ -116,98 +89,65 @@ export class LoginPageComponent {
       this.session.clear();
     }
 
-    const forcedDomain = currentUrl.searchParams.get('domain');
-    if (forcedDomain) {
-      this.selectedTenant = {
-        tenantId: '',
-        slug: '',
-        name: forcedDomain,
-        domain: forcedDomain,
-        role: 'user',
-      };
-    }
+    this.forcedDomain = currentUrl.searchParams.get('domain');
   }
 
-  step: Step = 'email';
   loading = false;
   error = '';
   ok = '';
   tenants: DiscoveredTenant[] = [];
   selectedTenant: DiscoveredTenant | null = null;
 
-  emailForm = this.fb.group({
+  form = this.fb.group({
     email: ['', [Validators.required, Validators.email]],
-  });
-
-  passwordForm = this.fb.group({
     password: ['', [Validators.required]],
   });
 
-  submitEmail(): void {
-    this.error = '';
-    this.ok = '';
-    if (this.emailForm.invalid) return;
-    const email = this.emailForm.value.email ?? '';
-    const forcedDomain = new URL(window.location.href).searchParams.get('domain') || undefined;
-
-    // Si venía ?domain= en la URL, saltamos descubrimiento.
-    if (this.selectedTenant?.domain) {
-      this.step = 'password';
+  /** Al salir del input de email, intenta descubrir tenants para mostrar selector si hay varios. */
+  onEmailBlur(): void {
+    if (this.forcedDomain) return;
+    const email = String(this.form.value.email ?? '').trim().toLowerCase();
+    if (!email || this.form.get('email')?.invalid) {
+      this.tenants = [];
+      this.selectedTenant = null;
       return;
     }
 
-    this.loading = true;
-    this.authApi.discoverTenantsByEmail({ email, domain: forcedDomain }).subscribe({
+    this.authApi.discoverTenantsByEmail({ email }).subscribe({
       next: (res) => {
-        this.loading = false;
         const list = res.tenants ?? [];
-        if (list.length === 0) {
-          // Evita enumeración: dejamos continuar al paso contraseña; el login fallará con credenciales.
-          this.selectedTenant = null;
-          this.step = 'password';
-          return;
-        }
-        if (list.length === 1) {
-          this.selectedTenant = list[0];
-          this.step = 'password';
-          return;
-        }
         this.tenants = list;
-        this.step = 'tenant';
+        this.selectedTenant = list.length === 1 ? list[0] : null;
       },
-      error: (err) => {
-        this.loading = false;
-        this.error = err?.error?.message ?? 'No fue posible validar el correo.';
+      error: () => {
+        this.tenants = [];
+        this.selectedTenant = null;
       },
     });
   }
 
   selectTenant(tenant: DiscoveredTenant): void {
     this.selectedTenant = tenant;
-    this.step = 'password';
-    this.error = '';
-    this.ok = '';
   }
 
-  backToEmail(): void {
-    this.step = 'email';
-    this.selectedTenant = null;
-    this.tenants = [];
-    this.passwordForm.reset();
+  submit(): void {
     this.error = '';
     this.ok = '';
-  }
+    if (this.form.invalid) return;
 
-  submitPassword(): void {
-    this.error = '';
-    this.ok = '';
-    if (this.passwordForm.invalid) return;
+    const email = String(this.form.value.email ?? '');
+    const password = String(this.form.value.password ?? '');
 
-    const email = this.emailForm.value.email ?? '';
-    const password = this.passwordForm.value.password ?? '';
-    const domain = this.selectedTenant?.domain
-      || new URL(window.location.href).searchParams.get('domain')
-      || window.location.hostname;
+    if (!this.forcedDomain && this.tenants.length > 1 && !this.selectedTenant) {
+      this.error = 'Selecciona la organización con la que quieres ingresar.';
+      return;
+    }
+
+    const domain =
+      this.forcedDomain ||
+      this.selectedTenant?.domain ||
+      this.tenants[0]?.domain ||
+      window.location.hostname;
 
     this.loading = true;
     this.authApi.login({ domain, email, password }).subscribe({
