@@ -29,21 +29,25 @@ interface LauncherAppView {
       <section class="relative max-w-6xl mx-auto space-y-6">
         <header class="rounded-[2rem] border border-white/10 bg-white/5 p-8 shadow-2xl shadow-slate-950/30 backdrop-blur-xl">
           <div class="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-            <div class="flex items-center gap-5">
+            <div class="flex items-start gap-5">
               <a
                 href="https://www.siriscloud.com.co"
                 target="_blank"
                 rel="noopener noreferrer"
-                class="shrink-0 cursor-pointer"
+                class="relative shrink-0 cursor-pointer mt-2 sm:mt-2.5"
                 aria-label="Ir a siriscloud.com.co"
                 title="Ir a SirisCloud"
               >
+                <span
+                  aria-hidden="true"
+                  class="pointer-events-none absolute -inset-2 rounded-full bg-sky-400/20 blur-xl sm:-inset-3 sm:bg-sky-400/25 sm:blur-2xl"
+                ></span>
                 <img
                   src="/logo.png"
                   alt="SirisCloud"
                   width="88"
                   height="88"
-                  class="h-[4.25rem] w-[4.25rem] sm:h-20 sm:w-20 object-contain drop-shadow-[0_14px_34px_rgba(0,0,0,0.4)]"
+                  class="relative h-[4.25rem] w-[4.25rem] sm:h-20 sm:w-20 object-contain drop-shadow-[0_14px_34px_rgba(0,0,0,0.4)]"
                   loading="eager"
                   decoding="async"
                 />
