@@ -28,58 +28,67 @@ interface LauncherAppView {
 
       <section class="relative max-w-6xl mx-auto space-y-6">
         <header class="rounded-[2rem] border border-white/10 bg-white/5 p-8 shadow-2xl shadow-slate-950/30 backdrop-blur-xl">
-          <div class="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
-            <div>
-              <p class="text-sm uppercase tracking-[0.25em] text-sky-400">SirisCloud Auth Portal</p>
-              <h1 class="mt-3 text-5xl font-semibold tracking-tight text-white">Hub central SirisCloud</h1>
-              <p class="mt-4 max-w-3xl text-sm leading-7 text-slate-400">
-                Autentica una sola vez y accede a los productos SirisCloud con la misma sesión.
-                Este portal es el punto de entrada común para las soluciones de tu organización.
-              </p>
+          <div class="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+            <div class="flex items-center gap-5">
+              <img
+                src="/logo.png"
+                alt="SirisCloud"
+                width="88"
+                height="88"
+                class="h-[4.25rem] w-[4.25rem] sm:h-20 sm:w-20 object-contain drop-shadow-[0_14px_34px_rgba(0,0,0,0.4)]"
+                loading="eager"
+                decoding="async"
+              />
+              <div>
+                <p class="text-sm uppercase tracking-[0.25em] text-sky-400">Centro de acceso SirisCloud</p>
+                <h1 class="mt-1 text-4xl font-semibold tracking-tight text-white sm:text-5xl">
+                  Panel de aplicaciones SirisCloud
+                </h1>
+                <p class="mt-3 max-w-3xl text-sm leading-7 text-slate-400">
+                  Autentica una sola vez y accede a los productos SirisCloud con la misma sesión.
+                  Este portal es el punto de entrada común para las soluciones de tu organización.
+                </p>
+              </div>
             </div>
             <button class="rounded-2xl bg-red-600 px-4 py-3 text-sm font-medium text-white" (click)="logout()">Cerrar sesión</button>
           </div>
         </header>
 
-        <div
-          class="rounded-3xl border border-slate-800 bg-slate-900/70 p-5 shadow-lg shadow-slate-950/20 backdrop-blur-sm"
-        >
-          <div class="flex flex-col gap-4 lg:flex-row lg:items-stretch lg:justify-between lg:gap-8">
-            <div class="shrink-0 lg:pt-0.5">
+        <div class="rounded-3xl border border-slate-800 bg-slate-900/70 p-4 shadow-lg shadow-slate-950/20 backdrop-blur-sm">
+          <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between lg:gap-6">
+            <div class="shrink-0">
               <p class="text-xs uppercase tracking-[0.2em] text-sky-400/90">Contexto de sesión</p>
               <p class="mt-1 text-sm text-slate-500">Dominio y estado de la sesión central.</p>
             </div>
-            <div class="flex min-w-0 flex-1 flex-col gap-3 sm:flex-row sm:items-stretch">
-              <div
-                class="min-w-0 flex-1 rounded-2xl border border-slate-800 bg-slate-950/70 px-4 py-3 sm:min-w-[12rem]"
-              >
+            <div class="flex min-w-0 flex-1 flex-col gap-3 sm:flex-row sm:items-center">
+              <div class="min-w-0 flex-1 rounded-2xl border border-slate-800 bg-slate-950/70 px-4 py-2.5 sm:min-w-[12rem]">
                 <p class="text-xs uppercase tracking-[0.18em] text-slate-500">Dominio</p>
-                <p class="mt-1.5 break-all text-sm font-medium text-white">{{ tenantDomain }}</p>
+                <p class="mt-1 break-all text-sm font-medium text-white">{{ tenantDomain }}</p>
               </div>
-              <div class="shrink-0 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 px-4 py-3 sm:w-52">
+              <div class="shrink-0 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 px-4 py-2.5 sm:w-52">
                 <p class="text-xs uppercase tracking-[0.18em] text-slate-500">Estado</p>
-                <p class="mt-1.5 text-sm font-medium text-emerald-300">Sesión central activa</p>
+                <p class="mt-1 text-sm font-medium text-emerald-300">Sesión central activa</p>
               </div>
             </div>
           </div>
         </div>
 
         <section class="grid gap-4 md:grid-cols-4">
-          <div class="rounded-2xl border border-slate-800 bg-slate-900/70 p-5">
+          <div class="rounded-2xl border border-slate-800 bg-slate-900/70 p-4">
             <p class="text-xs uppercase tracking-[0.18em] text-slate-500">Tenant</p>
-            <p class="mt-3 text-lg font-semibold text-white">{{ tenantName }}</p>
+            <p class="mt-2 text-base font-semibold text-white">{{ tenantName }}</p>
           </div>
-          <div class="rounded-2xl border border-slate-800 bg-slate-900/70 p-5">
+          <div class="rounded-2xl border border-slate-800 bg-slate-900/70 p-4">
             <p class="text-xs uppercase tracking-[0.18em] text-slate-500">Usuario</p>
-            <p class="mt-3 text-lg font-semibold text-white">{{ userEmail }}</p>
+            <p class="mt-2 text-base font-semibold text-white">{{ userEmail }}</p>
           </div>
-          <div class="rounded-2xl border border-slate-800 bg-slate-900/70 p-5">
+          <div class="rounded-2xl border border-slate-800 bg-slate-900/70 p-4">
             <p class="text-xs uppercase tracking-[0.18em] text-slate-500">Rol</p>
-            <p class="mt-3 text-lg font-semibold text-white">{{ userRole }}</p>
+            <p class="mt-2 text-base font-semibold text-white">{{ userRole }}</p>
           </div>
-          <div class="rounded-2xl border border-slate-800 bg-slate-900/70 p-5">
+          <div class="rounded-2xl border border-slate-800 bg-slate-900/70 p-4">
             <p class="text-xs uppercase tracking-[0.18em] text-slate-500">Apps</p>
-            <p class="mt-3 text-lg font-semibold text-white">{{ activeAppsLabel }}</p>
+            <p class="mt-2 text-base font-semibold text-white">{{ activeAppsLabel }}</p>
           </div>
         </section>
 
@@ -88,43 +97,41 @@ interface LauncherAppView {
             <p class="text-sm font-medium text-slate-300">Launcher de aplicaciones</p>
           </div>
 
-          <div
-            *ngIf="!appsLoading && apps.length === 0"
-            class="rounded-3xl border border-dashed border-slate-700 bg-slate-950/40 p-6 text-left"
-          >
-            <p class="text-xs uppercase tracking-[0.2em] text-slate-500">Aplicaciones</p>
-            <h3 class="mt-3 text-xl font-semibold text-white">No hay aplicaciones conectadas</h3>
-            <p class="mt-2 text-sm leading-6 text-slate-400">
-              Cuando tu organización tenga aplicaciones disponibles, aparecerán aquí. Si necesitas acceso, contacta al administrador.
-            </p>
-          </div>
+          @if (!appsLoading && apps.length === 0) {
+            <div class="rounded-3xl border border-dashed border-slate-700 bg-slate-950/40 p-6 text-left">
+              <p class="text-xs uppercase tracking-[0.2em] text-slate-500">Aplicaciones</p>
+              <h3 class="mt-3 text-xl font-semibold text-white">No hay aplicaciones conectadas</h3>
+              <p class="mt-2 text-sm leading-6 text-slate-400">
+                Cuando tu organización tenga aplicaciones disponibles, aparecerán aquí. Si necesitas acceso, contacta al administrador.
+              </p>
+            </div>
+          }
 
-          <div
-            *ngIf="apps.length > 0"
-            class="flex snap-x snap-mandatory flex-nowrap gap-4 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:thin] [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-slate-600"
-          >
-            <button
-              *ngFor="let app of apps"
-              type="button"
-              class="w-[min(100%,17.5rem)] shrink-0 snap-start rounded-3xl border border-sky-400/20 bg-sky-400/10 p-5 text-left transition hover:bg-sky-400/15 sm:w-72"
-              (click)="openApp(app)"
-            >
-              <p class="text-xs uppercase tracking-[0.2em] text-sky-300">{{ app.category }}</p>
-              <h3 class="mt-3 line-clamp-2 text-lg font-semibold leading-snug text-white">{{ app.name }}</h3>
-              <p class="mt-2 line-clamp-3 text-sm leading-relaxed text-slate-300">{{ app.description }}</p>
-              <span class="mt-4 inline-flex rounded-full bg-slate-950/60 px-3 py-1 text-xs text-slate-200">{{
-                app.ctaLabel
-              }}</span>
-            </button>
-          </div>
+          @if (apps.length > 0) {
+            <div class="flex snap-x snap-mandatory flex-nowrap gap-4 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:thin] [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-slate-600">
+              @for (app of apps; track app.id) {
+                <button
+                  type="button"
+                  class="w-[min(100%,17.5rem)] shrink-0 snap-start rounded-3xl border border-sky-400/20 bg-sky-400/10 p-5 text-left transition hover:bg-sky-400/15 sm:w-72"
+                  (click)="openApp(app)"
+                >
+                  <p class="text-xs uppercase tracking-[0.2em] text-sky-300">{{ app.category }}</p>
+                  <h3 class="mt-3 line-clamp-2 text-lg font-semibold leading-snug text-white">{{ app.name }}</h3>
+                  <p class="mt-2 line-clamp-3 text-sm leading-relaxed text-slate-300">{{ app.description }}</p>
+                  <span class="mt-4 inline-flex rounded-full bg-slate-950/60 px-3 py-1 text-xs text-slate-200">{{
+                    app.ctaLabel
+                  }}</span>
+                </button>
+              }
+            </div>
+          }
 
-          <div
-            *ngIf="launcherDebugPanel"
-            class="mt-6 rounded-2xl border border-amber-500/30 bg-amber-500/5 p-4 text-left"
-          >
-            <p class="text-xs font-medium uppercase tracking-wide text-amber-200/90">Debug launcher</p>
-            <pre class="mt-2 max-h-64 overflow-auto text-xs leading-relaxed text-slate-200">{{ launcherDebugPanel }}</pre>
-          </div>
+          @if (launcherDebugPanel) {
+            <div class="mt-6 rounded-2xl border border-amber-500/30 bg-amber-500/5 p-4 text-left">
+              <p class="text-xs font-medium uppercase tracking-wide text-amber-200/90">Debug launcher</p>
+              <pre class="mt-2 max-h-64 overflow-auto text-xs leading-relaxed text-slate-200">{{ launcherDebugPanel }}</pre>
+            </div>
+          }
         </section>
       </section>
     </main>
@@ -159,16 +166,42 @@ export class DashboardPageComponent implements OnInit {
   }
 
   openApp(app: LauncherAppView): void {
-    const requestedRedirectUrl = this.route.snapshot.queryParamMap.get('redirect');
+    const targetUrl = this.resolveTargetUrl(app);
+    if (!targetUrl) return;
+
     if (app.usesSessionRedirect) {
-      const payload = encodeURIComponent(btoa(JSON.stringify(this.data)));
-      const baseUrl = requestedRedirectUrl || app.launchUrl;
-      const joiner = baseUrl.includes('?') ? '&' : '?';
-      window.location.href = `${baseUrl}${joiner}session=${payload}`;
+      const payload = btoa(JSON.stringify(this.data));
+      const url = new URL(targetUrl, window.location.origin);
+      url.searchParams.set('session', payload);
+      window.location.href = url.toString();
       return;
     }
 
-    window.location.href = requestedRedirectUrl || app.launchUrl;
+    window.location.href = targetUrl;
+  }
+
+  private resolveTargetUrl(app: LauncherAppView): string | null {
+    const requestedRedirect = this.route.snapshot.queryParamMap.get('redirect');
+    if (!requestedRedirect) return app.launchUrl;
+
+    const parsedAppUrl = this.tryParseUrl(app.launchUrl);
+    const parsedRedirectUrl = this.tryParseUrl(requestedRedirect);
+    if (!parsedRedirectUrl) return app.launchUrl;
+
+    // Solo respeta ?redirect= si apunta al mismo origen del app seleccionado.
+    if (parsedAppUrl && parsedRedirectUrl.origin === parsedAppUrl.origin) {
+      return parsedRedirectUrl.toString();
+    }
+
+    return app.launchUrl;
+  }
+
+  private tryParseUrl(value: string): URL | null {
+    try {
+      return new URL(value, window.location.origin);
+    } catch {
+      return null;
+    }
   }
 
   logout(): void {

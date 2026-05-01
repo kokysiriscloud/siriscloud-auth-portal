@@ -27,8 +27,12 @@
       </button>
     </form>
 
-    <p *ngIf="error" class="text-sm text-red-600">{{ error }}</p>
-    <p *ngIf="success" class="text-sm text-emerald-600">{{ success }}</p>
+    @if (error) {
+      <p class="text-sm text-red-600">{{ error }}</p>
+    }
+    @if (success) {
+      <p class="text-sm text-emerald-600">{{ success }}</p>
+    }
 
     <a routerLink="/login" class="text-sm text-indigo-600 hover:underline">Ir a login</a>
   </section>

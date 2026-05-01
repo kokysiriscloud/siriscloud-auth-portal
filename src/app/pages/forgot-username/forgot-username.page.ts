@@ -25,9 +25,15 @@ import { AuthApiService } from '../../services/auth-api.service';
           </button>
         </form>
 
-        <p *ngIf="maskedEmail" class="text-sm text-emerald-700">Correo asociado: {{ maskedEmail }}</p>
-        <p *ngIf="message" class="text-sm text-slate-700">{{ message }}</p>
-        <p *ngIf="error" class="text-sm text-red-600">{{ error }}</p>
+        @if (maskedEmail) {
+          <p class="text-sm text-emerald-700">Correo asociado: {{ maskedEmail }}</p>
+        }
+        @if (message) {
+          <p class="text-sm text-slate-700">{{ message }}</p>
+        }
+        @if (error) {
+          <p class="text-sm text-red-600">{{ error }}</p>
+        }
 
         <a routerLink="/login" class="text-sm text-indigo-600 hover:underline">Volver a login</a>
       </section>

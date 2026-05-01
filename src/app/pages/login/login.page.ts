@@ -12,7 +12,21 @@ import { AuthSessionService } from '../../services/auth-session.service';
   template: `
     <main class="min-h-screen flex items-center justify-center p-4 bg-slate-50">
       <section class="w-full max-w-md bg-white rounded-2xl shadow p-6 space-y-4">
-        <h1 class="text-2xl font-semibold">Login</h1>
+        <div class="flex items-center justify-center gap-4">
+          <img
+            src="/logo.png"
+            alt="SirisCloud"
+            width="64"
+            height="64"
+            class="h-16 w-16 object-contain drop-shadow"
+            loading="eager"
+            decoding="async"
+          />
+          <div class="text-left">
+            <p class="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">SirisCloud</p>
+            <h1 class="text-2xl font-semibold text-slate-900">Ingresar</h1>
+          </div>
+        </div>
 
         <form [formGroup]="form" (ngSubmit)="submit()" class="space-y-3">
           <label class="block">
@@ -35,24 +49,28 @@ import { AuthSessionService } from '../../services/auth-session.service';
             />
           </label>
 
-          <div *ngIf="tenants.length > 1" class="space-y-2">
-            <p class="text-sm text-slate-700">Organización</p>
-            <ul class="space-y-2">
-              <li *ngFor="let t of tenants">
-                <button
-                  type="button"
-                  class="w-full rounded-lg border px-3 py-2 text-left transition"
-                  [class.border-indigo-500]="selectedTenant?.tenantId === t.tenantId"
-                  [class.bg-indigo-50]="selectedTenant?.tenantId === t.tenantId"
-                  [class.border-slate-300]="selectedTenant?.tenantId !== t.tenantId"
-                  (click)="selectTenant(t)"
-                >
-                  <span class="block text-sm font-medium text-slate-900">{{ t.name }}</span>
-                  <span class="block text-xs text-slate-500">{{ t.domain }}</span>
-                </button>
-              </li>
-            </ul>
-          </div>
+          @if (tenants.length > 1) {
+            <div class="space-y-2">
+              <p class="text-sm text-slate-700">Organización</p>
+              <ul class="space-y-2">
+                @for (t of tenants; track t.tenantId) {
+                  <li>
+                    <button
+                      type="button"
+                      class="w-full rounded-lg border px-3 py-2 text-left transition"
+                      [class.border-indigo-500]="selectedTenant?.tenantId === t.tenantId"
+                      [class.bg-indigo-50]="selectedTenant?.tenantId === t.tenantId"
+                      [class.border-slate-300]="selectedTenant?.tenantId !== t.tenantId"
+                      (click)="selectTenant(t)"
+                    >
+                      <span class="block text-sm font-medium text-slate-900">{{ t.name }}</span>
+                      <span class="block text-xs text-slate-500">{{ t.domain }}</span>
+                    </button>
+                  </li>
+                }
+              </ul>
+            </div>
+          }
 
           <button
             class="w-full rounded-lg bg-indigo-600 text-white py-2 font-medium disabled:opacity-60"
@@ -62,8 +80,12 @@ import { AuthSessionService } from '../../services/auth-session.service';
           </button>
         </form>
 
-        <p *ngIf="error" class="text-sm text-red-600">{{ error }}</p>
-        <p *ngIf="ok" class="text-sm text-emerald-600">{{ ok }}</p>
+        @if (error) {
+          <p class="text-sm text-red-600">{{ error }}</p>
+        }
+        @if (ok) {
+          <p class="text-sm text-emerald-600">{{ ok }}</p>
+        }
 
         <div class="text-sm space-y-1">
           <a routerLink="/forgot-password" class="block text-indigo-600 hover:underline">¿Olvidaste tu contraseña?</a>

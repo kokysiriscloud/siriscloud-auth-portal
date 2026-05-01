@@ -29,14 +29,20 @@ import { AuthApiService } from '../../services/auth-api.service';
           </button>
         </form>
 
-        <p *ngIf="!accessToken && !token" class="text-sm text-red-600">No se encontró token de recuperación en la URL.</p>
-        <p *ngIf="message" class="text-sm text-emerald-700">{{ message }}</p>
-        <p *ngIf="error" class="text-sm text-red-600">{{ error }}</p>
+        @if (!accessToken && !token) {
+          <p class="text-sm text-red-600">No se encontró token de recuperación en la URL.</p>
+        }
+        @if (message) {
+          <p class="text-sm text-emerald-700">{{ message }}</p>
+        }
+        @if (error) {
+          <p class="text-sm text-red-600">{{ error }}</p>
+        }
 
         <div class="space-y-1">
-          <a *ngIf="showRequestNewLink" routerLink="/forgot-password" class="block text-sm text-indigo-600 hover:underline">
-            Solicitar nuevo enlace
-          </a>
+          @if (showRequestNewLink) {
+            <a routerLink="/forgot-password" class="block text-sm text-indigo-600 hover:underline">Solicitar nuevo enlace</a>
+          }
           <a routerLink="/login" class="block text-sm text-indigo-600 hover:underline">Volver a login</a>
         </div>
       </section>
