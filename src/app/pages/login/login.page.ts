@@ -13,15 +13,24 @@ import { AuthSessionService } from '../../services/auth-session.service';
     <main class="min-h-screen flex items-center justify-center p-4 bg-slate-50">
       <section class="w-full max-w-md bg-white rounded-2xl shadow p-6 space-y-4">
         <div class="flex items-center justify-center gap-4">
-          <img
-            src="/logo.png"
-            alt="SirisCloud"
-            width="64"
-            height="64"
-            class="h-16 w-16 object-contain drop-shadow"
-            loading="eager"
-            decoding="async"
-          />
+          <a
+            href="https://www.siriscloud.com.co"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="shrink-0 cursor-pointer"
+            aria-label="Ir a siriscloud.com.co"
+            title="Ir a SirisCloud"
+          >
+            <img
+              src="/logo.png"
+              alt="SirisCloud"
+              width="64"
+              height="64"
+              class="h-16 w-16 object-contain drop-shadow"
+              loading="eager"
+              decoding="async"
+            />
+          </a>
           <div class="text-left">
             <p class="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">SirisCloud</p>
             <h1 class="text-2xl font-semibold text-slate-900">Ingresar</h1>
