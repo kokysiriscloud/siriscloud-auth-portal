@@ -9,6 +9,9 @@ const PUBLIC_AUTH_PATHS = [
   '/api/auth/forgot-username',
   '/api/auth/owner/accept-invite',
   '/api/auth/reset-password',
+  '/api/auth/signup-tenant',
+  '/api/auth/verify-signup',
+  '/api/auth/resend-signup-verification',
 ];
 
 export const authInterceptor: HttpInterceptorFn = (req, next) => {

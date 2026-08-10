@@ -180,9 +180,60 @@ import { AuthSessionService } from '../../services/auth-session.service';
           </div>
         }
 
-        <div class="text-sm space-y-1">
-          <a routerLink="/forgot-password" class="block text-indigo-600 hover:underline">¿Olvidaste tu contraseña?</a>
-          <a routerLink="/forgot-username" class="block text-indigo-600 hover:underline">¿Olvidaste tu usuario?</a>
+        <div class="relative overflow-hidden rounded-xl border border-indigo-100 bg-gradient-to-br from-indigo-50 via-white to-slate-50 p-4">
+          <div
+            class="pointer-events-none absolute -right-6 -top-6 h-24 w-24 rounded-full bg-indigo-200/40 blur-2xl"
+            aria-hidden="true"
+          ></div>
+          <div class="relative space-y-3">
+            <div class="flex items-start gap-3">
+              <div
+                class="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-indigo-600 text-white shadow-sm shadow-indigo-600/25"
+                aria-hidden="true"
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                  <path
+                    d="M12 3c-3.5 2.5-6 5.8-6 9.5A6 6 0 0 0 12 19a6 6 0 0 0 6-6.5C18 8.8 15.5 5.5 12 3Z"
+                    stroke="currentColor"
+                    stroke-width="1.75"
+                    stroke-linejoin="round"
+                  />
+                  <path
+                    d="M12 11v5M9.5 13.5h5"
+                    stroke="currentColor"
+                    stroke-width="1.75"
+                    stroke-linecap="round"
+                  />
+                </svg>
+              </div>
+              <div class="min-w-0">
+                <p class="text-sm font-semibold text-slate-900">¿Aún no te has registrado en SirisCloud?</p>
+                <p class="mt-1 text-sm leading-relaxed text-slate-600">
+                  Registra tu organización y activa el ecosistema: identidad, accesos y apps en un solo lugar.
+                </p>
+              </div>
+            </div>
+            <a
+              routerLink="/register"
+              class="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-indigo-200 bg-white px-3 py-2.5 text-sm font-semibold text-indigo-700 shadow-sm transition hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-800"
+            >
+              Crear organización
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path
+                  d="M5 12h14M13 6l6 6-6 6"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </a>
+          </div>
+        </div>
+
+        <div class="flex flex-col gap-1.5 text-sm sm:flex-row sm:justify-between">
+          <a routerLink="/forgot-password" class="text-indigo-600 hover:underline">¿Olvidaste tu contraseña?</a>
+          <a routerLink="/forgot-username" class="text-indigo-600 hover:underline">¿Olvidaste tu usuario?</a>
         </div>
       </section>
     </main>

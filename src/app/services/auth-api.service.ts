@@ -31,6 +31,20 @@ export interface LauncherAppsResponse {
   _debug?: Record<string, unknown>;
 }
 
+export interface SelfServiceCatalogApp {
+  appKey: string;
+  category: string | null;
+  name: string;
+  description: string;
+  ctaLabel: string;
+  allowSelfService: true;
+  alreadyActive: boolean;
+}
+
+export interface SelfServiceCatalogResponse {
+  apps: SelfServiceCatalogApp[];
+}
+
 export interface UpsertLauncherAppPayload {
   appKey: string;
   /** URL propia del tenant; si se omite se usa la del catálogo en backend. */
@@ -187,10 +201,66 @@ export class AuthApiService {
     return this.http.post(`${apiUrl}/api/auth/owner/accept-invite`, payload);
   }
 
+  signupTenant(payload: {
+    companyName: string;
+    identifier: string;
+    slug: string;
+    adminEmail: string;
+    requestedDomain: string;
+  }): Observable<{ requestId: string; status: 'pending_email_verification' }> {
+    const apiUrl = this.tenantConfig.resolveApiUrl();
+    return this.http.post<{ requestId: string; status: 'pending_email_verification' }>(
+      `${apiUrl}/api/auth/signup-tenant`,
+      payload,
+    );
+  }
+
+  verifySignup(payload: { token: string }): Observable<{
+    requestId: string;
+    status: 'verified';
+    tenantId: string;
+    domain: string;
+    ownerEmail: string;
+  }> {
+    const apiUrl = this.tenantConfig.resolveApiUrl();
+    return this.http.post<{
+      requestId: string;
+      status: 'verified';
+      tenantId: string;
+      domain: string;
+      ownerEmail: string;
+    }>(`${apiUrl}/api/auth/verify-signup`, payload);
+  }
+
+  resendSignupVerification(payload: {
+    adminEmail: string;
+  }): Observable<{ ok: true; sent: boolean; message: string }> {
+    const apiUrl = this.tenantConfig.resolveApiUrl();
+    return this.http.post<{ ok: true; sent: boolean; message: string }>(
+      `${apiUrl}/api/auth/resend-signup-verification`,
+      payload,
+    );
+  }
+
   getLauncherApps(payload: { domain: string; debug?: boolean }): Observable<LauncherAppsResponse> {
     const apiUrl = this.tenantConfig.resolveApiUrl(payload.domain);
     const q = payload.debug ? '?debug=1' : '';
     return this.http.get<LauncherAppsResponse>(`${apiUrl}/api/auth/launcher/tenant-apps${q}`);
+  }
+
+  getSelfServiceCatalog(payload: { domain: string }): Observable<SelfServiceCatalogResponse> {
+    const apiUrl = this.tenantConfig.resolveApiUrl(payload.domain);
+    return this.http.get<SelfServiceCatalogResponse>(`${apiUrl}/api/auth/launcher/self-service/catalog`);
+  }
+
+  activateSelfServiceApp(payload: {
+    domain: string;
+    appKey: string;
+  }): Observable<UpsertLauncherAppResponse> {
+    const apiUrl = this.tenantConfig.resolveApiUrl(payload.domain);
+    return this.http.post<UpsertLauncherAppResponse>(`${apiUrl}/api/auth/launcher/self-service/activate`, {
+      appKey: payload.appKey,
+    });
   }
 
   upsertLauncherApp(payload: { domain: string } & UpsertLauncherAppPayload): Observable<UpsertLauncherAppResponse> {

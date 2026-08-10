@@ -2,7 +2,11 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit, inject } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AuthSessionService } from '../../services/auth-session.service';
-import { AuthApiService, TenantLauncherApp } from '../../services/auth-api.service';
+import {
+  AuthApiService,
+  SelfServiceCatalogApp,
+  TenantLauncherApp,
+} from '../../services/auth-api.service';
 
 interface LauncherAppView {
   id: string;
@@ -63,7 +67,9 @@ interface LauncherAppView {
                 </p>
               </div>
             </div>
-            <button class="rounded-2xl bg-red-600 px-4 py-3 text-sm font-medium text-white" (click)="logout()">Cerrar sesión</button>
+            <button class="rounded-2xl bg-red-600 px-4 py-3 text-sm font-medium text-white" (click)="logout()">
+              Cerrar sesión
+            </button>
           </div>
         </header>
 
@@ -88,7 +94,7 @@ interface LauncherAppView {
 
         <section class="grid gap-4 md:grid-cols-4">
           <div class="rounded-2xl border border-slate-800 bg-slate-900/70 p-4">
-            <p class="text-xs uppercase tracking-[0.18em] text-slate-500">Tenant</p>
+            <p class="text-xs uppercase tracking-[0.18em] text-slate-500">Organización</p>
             <p class="mt-2 text-base font-semibold text-white">{{ tenantName }}</p>
           </div>
           <div class="rounded-2xl border border-slate-800 bg-slate-900/70 p-4">
@@ -115,13 +121,20 @@ interface LauncherAppView {
               <p class="text-xs uppercase tracking-[0.2em] text-slate-500">Aplicaciones</p>
               <h3 class="mt-3 text-xl font-semibold text-white">No hay aplicaciones conectadas</h3>
               <p class="mt-2 text-sm leading-6 text-slate-400">
-                Cuando tu organización tenga aplicaciones disponibles, aparecerán aquí. Si necesitas acceso, contacta al administrador.
+                @if (canManageApps) {
+                  Activa abajo las aplicaciones disponibles para tu organización.
+                } @else {
+                  Cuando tu organización tenga aplicaciones disponibles, aparecerán aquí. Si necesitas
+                  acceso, contacta al administrador.
+                }
               </p>
             </div>
           }
 
           @if (apps.length > 0) {
-            <div class="flex snap-x snap-mandatory flex-nowrap gap-4 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:thin] [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-slate-600">
+            <div
+              class="flex snap-x snap-mandatory flex-nowrap gap-4 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:thin] [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-slate-600"
+            >
               @for (app of apps; track app.id) {
                 <button
                   type="button"
@@ -142,10 +155,60 @@ interface LauncherAppView {
           @if (launcherDebugPanel) {
             <div class="mt-6 rounded-2xl border border-amber-500/30 bg-amber-500/5 p-4 text-left">
               <p class="text-xs font-medium uppercase tracking-wide text-amber-200/90">Debug launcher</p>
-              <pre class="mt-2 max-h-64 overflow-auto text-xs leading-relaxed text-slate-200">{{ launcherDebugPanel }}</pre>
+              <pre class="mt-2 max-h-64 overflow-auto text-xs leading-relaxed text-slate-200">{{
+                launcherDebugPanel
+              }}</pre>
             </div>
           }
         </section>
+
+        @if (canManageApps) {
+          <section class="rounded-3xl border border-slate-800 bg-slate-900/70 p-6">
+            <div class="mb-5">
+              <p class="text-sm font-medium text-slate-300">Activación autogestionada</p>
+              <p class="mt-1 text-sm text-slate-500">
+                Conecta aplicaciones publicadas disponibles para tu organización.
+              </p>
+            </div>
+
+            @if (catalogError) {
+              <p class="mb-4 text-sm text-rose-300">{{ catalogError }}</p>
+            }
+            @if (activateMessage) {
+              <p class="mb-4 text-sm text-emerald-300">{{ activateMessage }}</p>
+            }
+
+            @if (catalogLoading) {
+              <p class="text-sm text-slate-400">Cargando catálogo...</p>
+            } @else if (availableCatalogApps.length === 0) {
+              <div class="rounded-2xl border border-dashed border-slate-700 bg-slate-950/40 p-5">
+                <p class="text-sm text-slate-400">
+                  No hay aplicaciones nuevas para activar. Todas las disponibles ya están conectadas.
+                </p>
+              </div>
+            } @else {
+              <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                @for (app of availableCatalogApps; track app.appKey) {
+                  <div class="rounded-2xl border border-indigo-400/20 bg-indigo-400/5 p-5">
+                    <p class="text-xs uppercase tracking-[0.2em] text-indigo-300">
+                      {{ app.category || 'Aplicación' }}
+                    </p>
+                    <h3 class="mt-3 text-lg font-semibold text-white">{{ app.name }}</h3>
+                    <p class="mt-2 line-clamp-3 text-sm leading-relaxed text-slate-300">{{ app.description }}</p>
+                    <button
+                      type="button"
+                      class="mt-4 inline-flex rounded-xl bg-indigo-500 px-3 py-2 text-sm font-semibold text-white transition hover:bg-indigo-400 disabled:opacity-60"
+                      [disabled]="activatingAppKey === app.appKey"
+                      (click)="activateApp(app)"
+                    >
+                      {{ activatingAppKey === app.appKey ? 'Activando...' : 'Activar' }}
+                    </button>
+                  </div>
+                }
+              </div>
+            }
+          </section>
+        }
       </section>
     </main>
   `,
@@ -164,11 +227,27 @@ export class DashboardPageComponent implements OnInit {
   userRole = this.data?.user?.role ?? '-';
   apps: LauncherAppView[] = [];
   appsLoading = false;
-  /** JSON visible si abres `/dashboard?launcherDebug=1` */
+  catalogApps: SelfServiceCatalogApp[] = [];
+  catalogLoading = false;
+  catalogError = '';
+  activateMessage = '';
+  activatingAppKey: string | null = null;
   launcherDebugPanel = '';
+
+  get canManageApps(): boolean {
+    const role = String(this.userRole || '').toLowerCase();
+    return role === 'owner' || role === 'admin';
+  }
+
+  get availableCatalogApps(): SelfServiceCatalogApp[] {
+    return this.catalogApps.filter((app) => !app.alreadyActive);
+  }
 
   ngOnInit(): void {
     this.loadLauncherApps();
+    if (this.canManageApps) {
+      this.loadSelfServiceCatalog();
+    }
   }
 
   get activeAppsLabel(): string {
@@ -193,6 +272,31 @@ export class DashboardPageComponent implements OnInit {
     window.location.href = targetUrl;
   }
 
+  activateApp(app: SelfServiceCatalogApp): void {
+    const domain = this.data?.tenant?.domain ?? window.location.hostname;
+    if (!domain) return;
+
+    this.catalogError = '';
+    this.activateMessage = '';
+    this.activatingAppKey = app.appKey;
+
+    this.authApi.activateSelfServiceApp({ domain, appKey: app.appKey }).subscribe({
+      next: () => {
+        this.activatingAppKey = null;
+        this.activateMessage = `${app.name} activada correctamente.`;
+        this.loadLauncherApps();
+        this.loadSelfServiceCatalog();
+      },
+      error: (err) => {
+        this.activatingAppKey = null;
+        const msg = err?.error?.message;
+        this.catalogError = Array.isArray(msg)
+          ? msg.join(', ')
+          : msg || 'No fue posible activar la aplicación.';
+      },
+    });
+  }
+
   private resolveTargetUrl(app: LauncherAppView): string | null {
     const requestedRedirect = this.route.snapshot.queryParamMap.get('redirect');
     if (!requestedRedirect) return app.launchUrl;
@@ -201,7 +305,6 @@ export class DashboardPageComponent implements OnInit {
     const parsedRedirectUrl = this.tryParseUrl(requestedRedirect);
     if (!parsedRedirectUrl) return app.launchUrl;
 
-    // Solo respeta ?redirect= si apunta al mismo origen del app seleccionado.
     if (parsedAppUrl && parsedRedirectUrl.origin === parsedAppUrl.origin) {
       return parsedRedirectUrl.toString();
     }
@@ -238,9 +341,8 @@ export class DashboardPageComponent implements OnInit {
         this.apps = (response.apps ?? []).map((app) => this.toViewModel(app));
         this.appsLoading = false;
         if (launcherDebug) {
-          const apiUrl = `${domain} → tenant-apps`;
           const payload = {
-            apiUrlHint: apiUrl,
+            apiUrlHint: `${domain} → tenant-apps`,
             sessionTenantId: this.data?.tenant?.id ?? null,
             sessionTenantDomain: this.data?.tenant?.domain ?? null,
             appsCount: response.apps?.length ?? 0,
@@ -250,7 +352,7 @@ export class DashboardPageComponent implements OnInit {
           console.debug('[launcher]', payload);
         }
       },
-      error: (err: { status?: number; message?: string; url?: string }) => {
+      error: (err: { status?: number; message?: string }) => {
         this.apps = [];
         this.appsLoading = false;
         if (launcherDebug) {
@@ -263,6 +365,31 @@ export class DashboardPageComponent implements OnInit {
           this.launcherDebugPanel = JSON.stringify(payload, null, 2);
           console.warn('[launcher]', payload, err);
         }
+      },
+    });
+  }
+
+  private loadSelfServiceCatalog(): void {
+    const domain = this.data?.tenant?.domain ?? window.location.hostname;
+    if (!domain) {
+      this.catalogApps = [];
+      return;
+    }
+
+    this.catalogLoading = true;
+    this.catalogError = '';
+    this.authApi.getSelfServiceCatalog({ domain }).subscribe({
+      next: (response) => {
+        this.catalogApps = response.apps ?? [];
+        this.catalogLoading = false;
+      },
+      error: (err) => {
+        this.catalogApps = [];
+        this.catalogLoading = false;
+        const msg = err?.error?.message;
+        this.catalogError = Array.isArray(msg)
+          ? msg.join(', ')
+          : msg || 'No fue posible cargar el catálogo de aplicaciones.';
       },
     });
   }
