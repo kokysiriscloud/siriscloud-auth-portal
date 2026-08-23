@@ -6,10 +6,10 @@ export interface LoginTargetApp {
   sectionLabel?: string;
 }
 
-const META_APP_KEY = 'meta-platform';
-const META_APP_NAME = 'Lynex';
+const LYNEX_APP_KEY = 'lynex-platform';
+const LYNEX_APP_NAME = 'Lynex';
 
-const META_PATH_SECTIONS: Record<string, string> = {
+const LYNEX_PATH_SECTIONS: Record<string, string> = {
   correo: 'Correo',
   whatsapp: 'WhatsApp',
   'chat-web': 'Chat Web',
@@ -24,13 +24,18 @@ const META_PATH_SECTIONS: Record<string, string> = {
   connect: 'Conexión Meta',
 };
 
-function extractMetaSection(pathname: string): string | undefined {
+function extractLynexSection(pathname: string): string | undefined {
   const parts = pathname.toLowerCase().split('/').filter(Boolean);
-  const metaIdx = parts.indexOf('meta');
-  if (metaIdx === -1) return undefined;
-  const section = parts[metaIdx + 1];
+  const rootIdx = parts.findIndex((p) => p === 'lynex' || p === 'meta');
+  if (rootIdx === -1) return undefined;
+  const section = parts[rootIdx + 1];
   if (!section) return undefined;
-  return META_PATH_SECTIONS[section] ?? section.replace(/-/g, ' ');
+  return LYNEX_PATH_SECTIONS[section] ?? section.replace(/-/g, ' ');
+}
+
+function isLynexProductPath(pathname: string): boolean {
+  const path = pathname.toLowerCase();
+  return path.includes('/lynex') || path.includes('/meta/');
 }
 
 function tryParseUrl(value: string): URL | null {
@@ -55,14 +60,11 @@ export function resolveLoginTargetFromUrl(searchParams: URLSearchParams): LoginT
   };
 
   const redirectUrl = redirectRaw ? tryParseUrl(redirectRaw) : null;
-  if (redirectUrl) {
-    const path = redirectUrl.pathname.toLowerCase();
-    if (path.includes('/meta')) {
-      resolved.appKey = appKey || META_APP_KEY;
-      resolved.appName = appName || META_APP_NAME;
-      const section = extractMetaSection(path);
-      if (section) resolved.sectionLabel = section;
-    }
+  if (redirectUrl && isLynexProductPath(redirectUrl.pathname)) {
+    resolved.appKey = appKey || LYNEX_APP_KEY;
+    resolved.appName = appName || LYNEX_APP_NAME;
+    const section = extractLynexSection(redirectUrl.pathname);
+    if (section) resolved.sectionLabel = section;
   }
 
   if (appName) resolved.appName = appName;
@@ -89,10 +91,9 @@ export function refineLoginTargetFromLauncherApps(
 
   if (!matched) return current;
 
-  const section =
-    redirectUrl.pathname.toLowerCase().includes('/meta')
-      ? extractMetaSection(redirectUrl.pathname)
-      : current?.sectionLabel;
+  const section = isLynexProductPath(redirectUrl.pathname)
+    ? extractLynexSection(redirectUrl.pathname)
+    : current?.sectionLabel;
 
   return {
     appKey: matched.appKey,
