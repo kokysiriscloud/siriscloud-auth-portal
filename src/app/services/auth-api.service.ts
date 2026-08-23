@@ -8,7 +8,9 @@ export interface LoginResponse {
   accessToken: string;
   refreshToken: string;
   expiresIn: number;
-  user: { sub: string; email: string; role: string };
+  sessionId?: string;
+  idleTtlSeconds?: number;
+  user: { sub: string; email: string; role: string; id?: string };
   tenant: { id: string; identifier: string; slug: string; name: string; domain: string };
 }
 
@@ -23,6 +25,8 @@ export interface TenantLauncherApp {
   usesSessionRedirect: boolean;
   sortOrder: number;
   isActive?: boolean;
+  userHasAccess?: boolean;
+  unavailableReason?: string | null;
 }
 
 export interface LauncherAppsResponse {
@@ -101,6 +105,19 @@ export class AuthApiService {
       body.tenantHost = tenantHost;
     }
     return this.http.post<LoginResponse>(`${apiUrl}/api/auth/login`, body);
+  }
+
+  logout(payload: { domain: string }): Observable<{ ok: true }> {
+    const apiUrl = this.tenantConfig.resolveApiUrl(payload.domain);
+    return this.http.post<{ ok: true }>(`${apiUrl}/api/auth/logout`, {});
+  }
+
+  sessionHeartbeat(payload: { domain: string }): Observable<{ ok: true; idleTtlSeconds: number }> {
+    const apiUrl = this.tenantConfig.resolveApiUrl(payload.domain);
+    return this.http.post<{ ok: true; idleTtlSeconds: number }>(
+      `${apiUrl}/api/auth/session/heartbeat`,
+      {},
+    );
   }
 
   /**
@@ -199,6 +216,20 @@ export class AuthApiService {
   }): Observable<unknown> {
     const apiUrl = this.tenantConfig.resolveApiUrl(payload.domain);
     return this.http.post(`${apiUrl}/api/auth/owner/accept-invite`, payload);
+  }
+
+  acceptInvitation(payload: {
+    token: string;
+    fullName: string;
+    password: string;
+    domain?: string;
+  }): Observable<unknown> {
+    const apiUrl = this.tenantConfig.resolveApiUrl(payload.domain);
+    return this.http.post(`${apiUrl}/api/auth/invitations/accept`, {
+      token: payload.token,
+      fullName: payload.fullName,
+      password: payload.password,
+    });
   }
 
   signupTenant(payload: {

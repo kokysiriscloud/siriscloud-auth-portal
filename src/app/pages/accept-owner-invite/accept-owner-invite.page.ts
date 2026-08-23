@@ -79,24 +79,37 @@ export class AcceptOwnerInvitePageComponent implements OnInit, OnDestroy {
     }
 
     this.loading = true;
-    this.authApi
-      .acceptOwnerInvite({
-        token: this.token,
-        domain: this.domain,
-        fullName: fullName ?? '',
-        password: password ?? '',
-      })
-      .subscribe({
-        next: () => {
-          this.loading = false;
-          this.form.disable();
-          this.openSuccessModal();
-        },
-        error: (err) => {
-          this.error = err?.error?.message ?? 'No fue posible activar la invitación.';
-          this.loading = false;
-        },
-      });
+    const payload = {
+      token: this.token,
+      domain: this.domain,
+      fullName: fullName ?? '',
+      password: password ?? '',
+    };
+    this.authApi.acceptOwnerInvite(payload).subscribe({
+      next: () => this.onAccepted(),
+      error: (err) => {
+        const msg = String(err?.error?.message ?? '');
+        if (/no corresponde a un owner/i.test(msg)) {
+          this.authApi.acceptInvitation(payload).subscribe({
+            next: () => this.onAccepted(),
+            error: (memberErr) => {
+              this.error =
+                memberErr?.error?.message ?? 'No fue posible activar la invitación.';
+              this.loading = false;
+            },
+          });
+          return;
+        }
+        this.error = msg || 'No fue posible activar la invitación.';
+        this.loading = false;
+      },
+    });
+  }
+
+  private onAccepted(): void {
+    this.loading = false;
+    this.form.disable();
+    this.openSuccessModal();
   }
 
   goToLogin(): void {

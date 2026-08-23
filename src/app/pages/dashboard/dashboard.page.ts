@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AuthSessionService } from '../../services/auth-session.service';
 import {
@@ -7,6 +7,7 @@ import {
   SelfServiceCatalogApp,
   TenantLauncherApp,
 } from '../../services/auth-api.service';
+import { SessionHeartbeatService } from '../../services/session-heartbeat.service';
 
 interface LauncherAppView {
   id: string;
@@ -17,6 +18,8 @@ interface LauncherAppView {
   launchUrl: string;
   ctaLabel: string;
   usesSessionRedirect: boolean;
+  disabled: boolean;
+  disabledReason?: string;
 }
 
 @Component({
@@ -116,6 +119,12 @@ interface LauncherAppView {
             <p class="text-sm font-medium text-slate-300">Launcher de aplicaciones</p>
           </div>
 
+          @if (redirectAccessMessage) {
+            <div class="mb-5 rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
+              {{ redirectAccessMessage }}
+            </div>
+          }
+
           @if (!appsLoading && apps.length === 0) {
             <div class="rounded-3xl border border-dashed border-slate-700 bg-slate-950/40 p-6 text-left">
               <p class="text-xs uppercase tracking-[0.2em] text-slate-500">Aplicaciones</p>
@@ -138,15 +147,18 @@ interface LauncherAppView {
               @for (app of apps; track app.id) {
                 <button
                   type="button"
-                  class="w-[min(100%,17.5rem)] shrink-0 snap-start rounded-3xl border border-sky-400/20 bg-sky-400/10 p-5 text-left transition hover:bg-sky-400/15 sm:w-72"
+                  [disabled]="app.disabled"
+                  [class]="appCardClass(app)"
                   (click)="openApp(app)"
                 >
-                  <p class="text-xs uppercase tracking-[0.2em] text-sky-300">{{ app.category }}</p>
+                  <p class="text-xs uppercase tracking-[0.2em]" [class]="appCategoryClass(app)">
+                    {{ app.category }}
+                  </p>
                   <h3 class="mt-3 line-clamp-2 text-lg font-semibold leading-snug text-white">{{ app.name }}</h3>
                   <p class="mt-2 line-clamp-3 text-sm leading-relaxed text-slate-300">{{ app.description }}</p>
-                  <span class="mt-4 inline-flex rounded-full bg-slate-950/60 px-3 py-1 text-xs text-slate-200">{{
-                    app.ctaLabel
-                  }}</span>
+                  <span class="mt-4 inline-flex rounded-full px-3 py-1 text-xs" [class]="appCtaClass(app)">
+                    {{ app.disabled ? app.disabledReason || 'Sin acceso' : app.ctaLabel }}
+                  </span>
                 </button>
               }
             </div>
@@ -213,11 +225,12 @@ interface LauncherAppView {
     </main>
   `,
 })
-export class DashboardPageComponent implements OnInit {
+export class DashboardPageComponent implements OnInit, OnDestroy {
   private readonly session = inject(AuthSessionService);
   private readonly authApi = inject(AuthApiService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
+  private readonly heartbeat = inject(SessionHeartbeatService);
 
   private readonly data = this.session.get();
 
@@ -233,6 +246,7 @@ export class DashboardPageComponent implements OnInit {
   activateMessage = '';
   activatingAppKey: string | null = null;
   launcherDebugPanel = '';
+  redirectAccessMessage = '';
 
   get canManageApps(): boolean {
     const role = String(this.userRole || '').toLowerCase();
@@ -243,21 +257,55 @@ export class DashboardPageComponent implements OnInit {
     return this.catalogApps.filter((app) => !app.alreadyActive);
   }
 
+  appCardClass(app: LauncherAppView): string {
+    const base =
+      'w-[min(100%,17.5rem)] shrink-0 snap-start rounded-3xl border p-5 text-left transition sm:w-72';
+    if (app.disabled) {
+      return `${base} border-slate-700 bg-slate-800/40 opacity-50 cursor-not-allowed`;
+    }
+    return `${base} border-sky-400/20 bg-sky-400/10 hover:bg-sky-400/15`;
+  }
+
+  appCategoryClass(app: LauncherAppView): string {
+    return app.disabled ? 'text-slate-500' : 'text-sky-300';
+  }
+
+  appCtaClass(app: LauncherAppView): string {
+    if (app.disabled) {
+      return 'bg-slate-900/80 text-slate-400';
+    }
+    return 'bg-slate-950/60 text-slate-200';
+  }
+
   ngOnInit(): void {
+    const domain = this.data?.tenant?.domain ?? window.location.hostname;
+    if (domain) {
+      this.heartbeat.start(domain);
+    }
     this.loadLauncherApps();
     if (this.canManageApps) {
       this.loadSelfServiceCatalog();
     }
   }
 
+  ngOnDestroy(): void {
+    this.heartbeat.stop();
+  }
+
   get activeAppsLabel(): string {
     if (this.appsLoading) return 'Cargando...';
-    const count = this.apps.length;
-    if (count === 0) return 'Ninguna conectada';
-    return `${count} activa${count === 1 ? '' : 's'}`;
+    const total = this.apps.length;
+    if (total === 0) return 'Ninguna conectada';
+    const accessible = this.apps.filter((a) => !a.disabled).length;
+    if (accessible === total) {
+      return `${total} activa${total === 1 ? '' : 's'}`;
+    }
+    return `${accessible} de ${total} activas`;
   }
 
   openApp(app: LauncherAppView): void {
+    if (app.disabled) return;
+
     const targetUrl = this.resolveTargetUrl(app);
     if (!targetUrl) return;
 
@@ -305,6 +353,12 @@ export class DashboardPageComponent implements OnInit {
     const parsedRedirectUrl = this.tryParseUrl(requestedRedirect);
     if (!parsedRedirectUrl) return app.launchUrl;
 
+    // No reabrir enlaces de activación de invitación tras el login.
+    const redirectPath = parsedRedirectUrl.pathname.replace(/\/+$/, '') || '/';
+    if (redirectPath.includes('/accept-invite')) {
+      return app.launchUrl;
+    }
+
     if (parsedAppUrl && parsedRedirectUrl.origin === parsedAppUrl.origin) {
       return parsedRedirectUrl.toString();
     }
@@ -321,8 +375,20 @@ export class DashboardPageComponent implements OnInit {
   }
 
   logout(): void {
-    this.session.clear();
-    void this.router.navigateByUrl('/login');
+    const domain = this.data?.tenant?.domain ?? window.location.hostname;
+    this.heartbeat.stop();
+    const finish = () => {
+      this.session.clear();
+      void this.router.navigateByUrl('/login');
+    };
+    if (!domain) {
+      finish();
+      return;
+    }
+    this.authApi.logout({ domain }).subscribe({
+      next: () => finish(),
+      error: () => finish(),
+    });
   }
 
   private loadLauncherApps(): void {
@@ -340,6 +406,7 @@ export class DashboardPageComponent implements OnInit {
       next: (response) => {
         this.apps = (response.apps ?? []).map((app) => this.toViewModel(app));
         this.appsLoading = false;
+        this.checkRedirectAccess();
         if (launcherDebug) {
           const payload = {
             apiUrlHint: `${domain} → tenant-apps`,
@@ -394,7 +461,36 @@ export class DashboardPageComponent implements OnInit {
     });
   }
 
+  private checkRedirectAccess(): void {
+    const requestedRedirect = this.route.snapshot.queryParamMap.get('redirect');
+    if (!requestedRedirect) {
+      this.redirectAccessMessage = '';
+      return;
+    }
+
+    const parsedRedirect = this.tryParseUrl(requestedRedirect);
+    if (!parsedRedirect) {
+      this.redirectAccessMessage = '';
+      return;
+    }
+
+    const matchingApp = this.apps.find((app) => {
+      const parsedApp = this.tryParseUrl(app.launchUrl);
+      return parsedApp && parsedApp.origin === parsedRedirect.origin;
+    });
+
+    if (matchingApp?.disabled) {
+      this.redirectAccessMessage =
+        matchingApp.disabledReason ||
+        'No tienes acceso a la aplicación que intentabas abrir. Contacta al administrador.';
+      return;
+    }
+
+    this.redirectAccessMessage = '';
+  }
+
   private toViewModel(app: TenantLauncherApp): LauncherAppView {
+    const disabled = app.userHasAccess === false;
     return {
       id: app.id,
       appKey: app.appKey,
@@ -404,6 +500,8 @@ export class DashboardPageComponent implements OnInit {
       launchUrl: app.launchUrl,
       ctaLabel: app.ctaLabel || 'Abrir app',
       usesSessionRedirect: app.usesSessionRedirect,
+      disabled,
+      disabledReason: disabled ? app.unavailableReason || 'Sin acceso' : undefined,
     };
   }
 }

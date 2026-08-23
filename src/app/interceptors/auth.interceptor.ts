@@ -8,6 +8,7 @@ const PUBLIC_AUTH_PATHS = [
   '/api/auth/forgot-password',
   '/api/auth/forgot-username',
   '/api/auth/owner/accept-invite',
+  '/api/auth/invitations/accept',
   '/api/auth/reset-password',
   '/api/auth/signup-tenant',
   '/api/auth/verify-signup',

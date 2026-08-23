@@ -12,6 +12,7 @@ import { authGuard } from './guards/auth.guard';
 export const APP_ROUTES: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
   { path: 'accept-owner-invite', component: AcceptOwnerInvitePageComponent },
+  { path: 'accept-invite', component: AcceptOwnerInvitePageComponent },
   { path: 'login', component: LoginPageComponent },
   { path: 'register', component: RegisterPageComponent },
   { path: 'verify-signup', component: VerifySignupPageComponent },

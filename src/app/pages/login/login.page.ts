@@ -342,10 +342,18 @@ export class LoginPageComponent {
       },
       error: (err) => {
         const status = Number(err?.status ?? 0);
-        if (status === 401 || status === 403) {
+        if (status === 409) {
+          const msg = err?.error?.message;
+          this.error = Array.isArray(msg)
+            ? msg.join(' ')
+            : msg ||
+              'Ya hay una sesión activa en otro dispositivo. Si cerraste el navegador, espera unos minutos.';
+        } else if (status === 401 || status === 403) {
           this.error = 'Credenciales inválidas. Verifica tu correo y contraseña.';
         } else {
-          this.error = err?.error?.message ?? 'No fue posible iniciar sesión. Inténtalo de nuevo en unos minutos.';
+          this.error =
+            err?.error?.message ??
+            'No fue posible iniciar sesión. Inténtalo de nuevo en unos minutos.';
         }
         this.loading = false;
       },
