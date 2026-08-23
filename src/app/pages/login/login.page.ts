@@ -1,9 +1,15 @@
 import { CommonModule } from '@angular/common';
-import { Component, inject } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { AuthApiService, DiscoveredTenant } from '../../services/auth-api.service';
 import { AuthSessionService } from '../../services/auth-session.service';
+import {
+  formatLoginTargetLabel,
+  LoginTargetApp,
+  refineLoginTargetFromLauncherApps,
+  resolveLoginTargetFromUrl,
+} from '../../utils/login-target-app.util';
 
 @Component({
   selector: 'app-login-page',
@@ -36,6 +42,18 @@ import { AuthSessionService } from '../../services/auth-session.service';
             <h1 class="text-2xl font-semibold text-slate-900">Ingresar</h1>
           </div>
         </div>
+
+        @if (targetApp(); as target) {
+          <div class="rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-3">
+            <p class="text-[11px] font-semibold uppercase tracking-[0.16em] text-indigo-600">
+              Accediendo a
+            </p>
+            <p class="mt-1 text-base font-semibold text-slate-900">{{ formatTargetLabel(target) }}</p>
+            <p class="mt-1 text-xs text-slate-600">
+              Tras iniciar sesión continuarás en esta aplicación.
+            </p>
+          </div>
+        }
 
         <form [formGroup]="form" (ngSubmit)="submit()" class="space-y-3">
           <label class="block">
@@ -246,6 +264,9 @@ export class LoginPageComponent {
 
   /** Si el usuario entra con `?domain=<tenant>`, se respeta y se salta el descubrimiento. */
   private readonly forcedDomain: string | null;
+  private readonly redirectUrl: string | null;
+
+  readonly targetApp = signal<LoginTargetApp | null>(null);
 
   constructor() {
     const currentUrl = new URL(window.location.href);
@@ -256,6 +277,16 @@ export class LoginPageComponent {
     }
 
     this.forcedDomain = currentUrl.searchParams.get('domain');
+    this.redirectUrl = requestedRedirectUrl;
+    this.targetApp.set(resolveLoginTargetFromUrl(currentUrl.searchParams));
+
+    if (this.forcedDomain) {
+      this.refineTargetAppForDomain(this.forcedDomain);
+    }
+  }
+
+  formatTargetLabel(target: LoginTargetApp): string {
+    return formatLoginTargetLabel(target);
   }
 
   loading = false;
@@ -289,6 +320,9 @@ export class LoginPageComponent {
         const list = res.tenants ?? [];
         this.tenants = list;
         this.selectedTenant = list.length === 1 ? list[0] : null;
+        if (this.selectedTenant) {
+          this.refineTargetAppForDomain(this.selectedTenant.domain);
+        }
       },
       error: () => {
         this.tenants = [];
@@ -299,6 +333,25 @@ export class LoginPageComponent {
 
   selectTenant(tenant: DiscoveredTenant): void {
     this.selectedTenant = tenant;
+    this.refineTargetAppForDomain(tenant.domain);
+  }
+
+  private refineTargetAppForDomain(domain: string): void {
+    if (!this.redirectUrl) return;
+
+    this.authApi.getLauncherApps({ domain }).subscribe({
+      next: (res) => {
+        const refined = refineLoginTargetFromLauncherApps(
+          this.redirectUrl,
+          res.apps ?? [],
+          this.targetApp(),
+        );
+        if (refined) this.targetApp.set(refined);
+      },
+      error: () => {
+        /* Mantener resolución local por redirect / query params. */
+      },
+    });
   }
 
   submit(): void {

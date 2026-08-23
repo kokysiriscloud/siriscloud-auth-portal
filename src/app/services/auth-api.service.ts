@@ -273,10 +273,18 @@ export class AuthApiService {
     );
   }
 
-  getLauncherApps(payload: { domain: string; debug?: boolean }): Observable<LauncherAppsResponse> {
+  getLauncherApps(payload: {
+    domain: string;
+    tenantHost?: string;
+    debug?: boolean;
+  }): Observable<LauncherAppsResponse> {
     const apiUrl = this.tenantConfig.resolveApiUrl(payload.domain);
+    const tenantHost = payload.tenantHost || this.resolveLoginTenantHost(payload.domain);
     const q = payload.debug ? '?debug=1' : '';
-    return this.http.get<LauncherAppsResponse>(`${apiUrl}/api/auth/launcher/tenant-apps${q}`);
+    const headers = tenantHost ? { 'x-tenant-host': tenantHost } : undefined;
+    return this.http.get<LauncherAppsResponse>(`${apiUrl}/api/auth/launcher/tenant-apps${q}`, {
+      headers,
+    });
   }
 
   getSelfServiceCatalog(payload: { domain: string }): Observable<SelfServiceCatalogResponse> {
