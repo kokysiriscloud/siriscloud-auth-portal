@@ -235,9 +235,9 @@ export class AuthApiService {
   signupTenant(payload: {
     companyName: string;
     identifier: string;
-    slug: string;
     adminEmail: string;
-    requestedDomain: string;
+    slug?: string;
+    requestedDomain?: string;
   }): Observable<{ requestId: string; status: 'pending_email_verification' }> {
     const apiUrl = this.tenantConfig.resolveApiUrl();
     return this.http.post<{ requestId: string; status: 'pending_email_verification' }>(

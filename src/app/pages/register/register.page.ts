@@ -6,6 +6,19 @@ import { AuthApiService } from '../../services/auth-api.service';
 
 const DOMAIN_SUFFIX = '.siriscloud.com.co';
 
+/** Genera un subdominio válido a partir del nombre de empresa. */
+function slugifyForDomain(value: string): string {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .replace(/-{2,}/g, '')
+    .slice(0, 48)
+    .replace(/-+$/g, '');
+}
+
 @Component({
   selector: 'app-register-page',
   standalone: true,
@@ -69,27 +82,6 @@ const DOMAIN_SUFFIX = '.siriscloud.com.co';
               type="email"
               autocomplete="email"
             />
-          </label>
-
-          <label class="block">
-            <span class="text-sm text-slate-700">Dominio solicitado</span>
-            <div class="mt-1 flex overflow-hidden rounded-lg border border-slate-300 focus-within:ring-2 focus-within:ring-indigo-200">
-              <input
-                class="min-w-0 flex-1 border-0 px-3 py-2 outline-none"
-                formControlName="domainSubdomain"
-                placeholder="mi-empresa"
-                autocomplete="off"
-              />
-              <span
-                class="inline-flex shrink-0 items-center border-l border-slate-300 bg-slate-50 px-3 text-sm text-slate-500"
-              >
-                {{ domainSuffix }}
-              </span>
-            </div>
-            <span class="mt-1 block text-xs text-slate-400">
-              Solo minúsculas, números y guiones. Quedará como
-              <span class="font-medium text-slate-600">{{ previewDomain }}</span>
-            </span>
           </label>
 
           <button
@@ -208,8 +200,6 @@ export class RegisterPageComponent implements OnDestroy {
   private readonly authApi = inject(AuthApiService);
   private readonly router = inject(Router);
 
-  readonly domainSuffix = DOMAIN_SUFFIX;
-
   loading = false;
   resending = false;
   error = '';
@@ -223,13 +213,7 @@ export class RegisterPageComponent implements OnDestroy {
     companyName: ['', [Validators.required, Validators.minLength(2)]],
     identifier: ['', [Validators.required, Validators.minLength(2)]],
     adminEmail: ['', [Validators.required, Validators.email]],
-    domainSubdomain: ['', [Validators.required, Validators.pattern(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)]],
   });
-
-  get previewDomain(): string {
-    const sub = String(this.form.value.domainSubdomain || '').trim().toLowerCase();
-    return sub ? `${sub}${DOMAIN_SUFFIX}` : `tu-subdominio${DOMAIN_SUFFIX}`;
-  }
 
   get canResend(): boolean {
     return !this.form.get('adminEmail')?.invalid;
@@ -249,11 +233,17 @@ export class RegisterPageComponent implements OnDestroy {
     }
 
     const value = this.form.getRawValue();
-    const subdomain = String(value.domainSubdomain ?? '').trim().toLowerCase();
+    const companyName = String(value.companyName ?? '').trim();
+    const subdomain = slugifyForDomain(companyName);
+    if (!subdomain) {
+      this.error = 'El nombre de la empresa no permite generar un dominio válido.';
+      return;
+    }
+
     this.loading = true;
     this.authApi
       .signupTenant({
-        companyName: String(value.companyName ?? '').trim(),
+        companyName,
         identifier: String(value.identifier ?? '').trim(),
         slug: subdomain,
         adminEmail: String(value.adminEmail ?? '').trim().toLowerCase(),
